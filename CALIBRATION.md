@@ -1,0 +1,104 @@
+# Calibration
+
+The goal is a practice opponent that plays like a real **~1000 Lichess
+(Rapid/Classical)** player: not just "weak", but weak in the human way (the
+right rate of hung pieces and missed tactics, not random shuffles).
+
+## 1. Human reference data
+
+Players' moves were scored from the first ~19.9k analysed, rated,
+normally-terminated games of the Lichess database for September 2025
+(`lichess_db_standard_rated_2025-09.pgn.zst`, https://database.lichess.org/),
+using the `[%eval]` comments already in the PGN. The code is the same one used for
+the bot's games (`tools/calibration/metrics.py`):
+
+* CPL is clamped at ±1000 cp (ACPL computed on clamped evals).
+* Win% and per-move accuracy use the Lichess formulas (scalachess `eval.scala`,
+  lila `AccuracyPercent.scala`). Game accuracy is the Lichess volatility-weighted
+  mean + harmonic mean.
+* Inaccuracy, mistake and blunder are drops of ≥0.1, ≥0.2 and ≥0.3 in winning
+  chances (lila `Advice.scala`).
+
+`tools/calibration/calib.py URL N OUT.jsonl` streams a month of the database
+and writes per-player-game rows. `calib_report.py OUT.jsonl` prints the band table.
+The result is `tools/calibration/calib_table.txt`. The raw jsonl (~6 MB) is
+not included because it can be regenerated.
+
+| Lichess band | mean ACPL | mean accuracy | inacc/100 | mistakes/100 | blunders/100 |
+|---|---|---|---|---|---|
+| 1000 | 75.3 | 72.0 | 10.15 | 5.13 | 9.33 |
+| 1200 | 67.6 | 74.6 | 9.78 | 4.70 | 8.32 |
+| 1400 | 60.2 | 76.9 | 9.58 | 4.68 | 7.18 |
+| 1700 | 50.8 | 80.8 | 9.17 | 3.97 | 5.74 |
+| 2000 | 43.9 | 83.0 | 8.32 | 3.46 | 4.82 |
+| 2300 | 32.4 | 86.5 | 6.32 | 2.31 | 3.59 |
+
+## 2. Why not Stockfish Skill Level / UCI_Elo?
+
+The earlier version played Stockfish "Skill Level 6" moves on the assumption
+that this was roughly 1000. Measured with the method above, it scored **ACPL ~33
+and ~90% accuracy, which is about 2100-2300 Lichess**. That makes sense:
+Stockfish's own calibration puts Skill 6 near 2360 CCRL Blitz, and the
+UCI_Elo floor is 1320 *engine* Elo. Skill levels make engine-style errors
+(small inaccuracies) and almost never hang material, while real 1000s blunder
+about 9 times per 100 moves. The legacy pipeline is still available
+(`skill:6`), but it is not human-calibrated.
+
+## 3. Bot measurement
+
+`tools/calibration/batch.sh TAG NGAMES OPP PONDER 'OVERRIDES' [SEEDBASE] [PAR] [ELO]`:
+
+1. `selfplay.py` drives the real worker protocol (`choose`/`ponder`) for
+   NGAMES games. OPP is `self` (both sides are the bot), `sf1320` (Stockfish
+   UCI_Elo 1320), or `old6` (legacy Skill-6 pipeline).
+2. `score.py` re-scores every game with Stockfish at depth 14 (`SCORE_DEPTH`).
+3. `report.py` prints bot-side ACPL (bootstrap 90% CI), mean game accuracy,
+   I/M/B per 100 moves, and move sources.
+
+`test_threefold.py` is a regression test for the won-position rules (no
+repetition when winning, no endless checks). Its expected result is `FAILS: 0`.
+
+### 1000 tuning results (2026-10-09, Stockfish 17)
+
+| tag | T | P_BLIND | TEMPT | moves | ACPL | acc % | I/M/B per 100 |
+|---|---|---|---|---|---|---|---|
+| t6 | 6.0 | 0 | - | 846 | 48.5 | 86.3 | 13.95/4.14/2.60 |
+| t45b12 (min loss 8) | 4.5 | .12 | - | 982 | 55.6 | 82.9 | 13.34/5.50/3.56 |
+| A35b35 | 3.5 | .35 | - | 969 | 52.3 | 86.1 | 11.97/4.85/2.48 |
+| B30b45 | 3.0 | .45 | - | 767 | 51.4 | 86.3 | 11.34/4.43/2.74 |
+| C35b40 (min loss 20) | 3.5 | .40 | 0 | 947 | 53.6 | 82.0 | 7.60/1.69/2.96 |
+| D30b55 | 3.0 | .55 | 0 | 871 | 52.1 | 83.4 | 7.00/1.72/5.40 |
+| E45b30t12 | 4.5 | .30 | 12 | 518 | 78.1 | 73.3 | 11.58/3.67/9.46 |
+| F45b45t8 | 4.5 | .45 | 8 | 773 | 77.6 | 73.4 | 7.50/1.81/7.76 |
+| V1self (ponder, won-rules v2) | 4.8 | .28 | 12 | 600 | 66.5 | 78.5 | 8.67/3.17/6.83 |
+| **G52b36 (12 games, chosen)** | **5.2** | **.36** | **12** | **1426** | **79.6** (90% CI 73.5-85.8) | **76.0** | **7.99/3.16/9.05** |
+| V2self (9 games, ponder) | 5.4 | .34 | 12 | 845 | 74.6 (66.9-82.7) | 77.8 | 12.43/1.89/6.15 |
+| V2sf1320 (6 games vs SF UCI_Elo 1320) | 5.4 | .34 | 12 | 316 | 75.6 (66.7-85.2) | 83.5 | 11.08/3.80/3.80 |
+| H48b36m12 (MIN_LOSS 12, TEMPT 10) | 4.8 | .36 | 10 | 1276 | 79.7 (74.0-85.7) | 81.2 | 10.82/5.33/6.43 |
+| V3self (confirmation, ponder on) | 5.2 | .36 | 12 | 1202 | 67.6 (61.6-73.7) | 78.9 | 10.48/3.41/7.07 |
+
+**Target (Lichess 1000):** ACPL 75.3, accuracy 72.0%, I/M/B 10.15/5.13/9.33.
+
+G52b36 was chosen as the shipped 1000 preset (`presets/elo-profiles.json`)
+because it matched best on ACPL, blunder rate, and accuracy together. Pondering
+slightly lowers ACPL, because cached replies come from slightly longer judge
+searches. Expect ACPL in the 68-80 range from game to game. Tests ran on a
+heavily loaded shared machine, and the worker includes engine respawn and retry
+for that case.
+
+## 4. Calibrating a new level (e.g. 1200)
+
+1. Pick the target row from `calib_table.txt`.
+2. Start from interpolated knobs. Raise strength mainly by lowering `T` and
+   `P_BLIND`, and by raising `GUARD_*_P` slightly.
+3. Run `CHESS_ELO_OVERRIDES='{"T":4.8,"P_BLIND":0.30}' tools/calibration/batch.sh
+   R1200a 12 self 0 '{"T":4.8,"P_BLIND":0.30}' 100 6 1200`. Use at least 10 games
+   (more than 1000 moves) per candidate, and confirm the winner with a second
+   batch with ponder on and a different seed base.
+4. Add the anchor to `presets/elo-profiles.json` with `"calibrated": true`
+   and the measured and target metrics. Mirror it in the built-in
+   `ELO_PROFILES` fallback in `chess-sf-worker.py`.
+
+Note: the calibration is tied to the engine version (Stockfish 17) and to the
+worker's judge depth and time settings. `setup.sh` downloads sf_17 by default for
+this reason (`STOCKFISH_TAG` overrides).
