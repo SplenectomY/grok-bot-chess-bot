@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "description": "Human-calibrated picker presets for chess-sf-worker.py (elo mode). Target = Lichess Rapid/Classical rating. Between anchors the worker interpolates knobs linearly; outside it clamps to the nearest anchor. See CALIBRATION.md.",
+  "profiles": {
+    "1000": {
+      "calibrated": true,
+      "calibratedOn": "2026-10-09",
+      "method": "self-play batch G52b36: 12 games, 1426 non-forced bot moves, scored by Stockfish depth 14 with tools/calibration/metrics.py (Lichess formulas)",
+      "measured": { "acpl": 79.6, "acpl90ci": [73.5, 85.8], "accuracy": 76.0, "per100": { "inaccuracies": 7.99, "mistakes": 3.16, "blunders": 9.05 }, "moves": 1426 },
+      "target": { "source": "Lichess 2025-09 rated Rapid+Classical, 1000 band (646 player-games)", "acpl": 75.3, "accuracy": 72.0, "per100": { "inaccuracies": 10.15, "mistakes": 5.13, "blunders": 9.33 } },
+      "knobs": { "T": 5.2, "ALPHA": 0.5, "KAPPA": 3.0, "K": 6, "P_BLIND": 0.36, "BLIND_TEMPT": 12.0, "BLIND_MIN_LOSS": 20.0, "TEACH_BONUS": 4.0, "TEACH_MAX_LOSS": 6.0, "GUARD_QUEEN_P": 0.85, "GUARD_MATE1_P": 0.6 }
+    },
+    "1400": {
+      "calibrated": false,
+      "note": "PROVISIONAL: extrapolated from the 1000 tuning runs (fewer blind turns, lower temperature). Not validated; targets 1100-1400 are interpolated guesses. Calibrate before trusting (see CALIBRATION.md).",
+      "target": { "source": "Lichess 2025-09 rated Rapid+Classical, 1400 band", "acpl": 60.2, "accuracy": 76.9, "per100": { "inaccuracies": 9.58, "mistakes": 4.68, "blunders": 7.18 } },
+      "knobs": { "T": 4.6, "ALPHA": 0.5, "KAPPA": 3.0, "K": 6, "P_BLIND": 0.22, "BLIND_TEMPT": 12.0, "BLIND_MIN_LOSS": 20.0, "TEACH_BONUS": 4.0, "TEACH_MAX_LOSS": 5.0, "GUARD_QUEEN_P": 0.90, "GUARD_MATE1_P": 0.7 }
+    }
+  }
+}
