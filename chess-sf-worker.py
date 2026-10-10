@@ -750,15 +750,19 @@ import math
 # Built-in fallback presets. The canonical copy lives in presets/elo-profiles.json
 # (loaded below, overrides these). See CALIBRATION.md.
 ELO_PROFILES: dict[int, dict] = {
+    # FIELD-TEST 2026-10-10: sub-1000 targets interpolate toward this anchor (below 800: clamp to 800)
+    800: dict(T=5.8, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.40, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
+              TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6),
     # CALIBRATED 2026-10-09 by self-play, see CALIBRATION.md
     1000: dict(T=5.2, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.36, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6),
-    # PROVISIONAL (not yet validated): extrapolated from the 1000 tuning runs
-    # (fewer blind turns, lower temperature). Validate before trusting 1100-1400.
-    1400: dict(T=4.6, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.22, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
-               TEACH_MAX_LOSS=5.0, GUARD_QUEEN_P=0.90, GUARD_MATE1_P=0.7),
+    # FIELD-TEST 2026-10-10: self-play calibrated vs Lichess Rapid/Classical (see CALIBRATION.md)
+    1200: dict(T=4.6, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.24, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
+               TEACH_MAX_LOSS=5.5, GUARD_QUEEN_P=0.875, GUARD_MATE1_P=0.65),
+    1400: dict(T=3.8, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.20, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
+               TEACH_MAX_LOSS=5.0, GUARD_QUEEN_P=0.90, GUARD_MATE1_P=0.70),
 }
-ELO_CALIBRATED = {1000}   # anchors validated by self-play scoring; others are provisional
+ELO_CALIBRATED = {1000}   # fully calibrated; 800/1200/1400 are field-test (self-play matched, awaiting human games)
 PRESETS_SOURCE = "built-in"
 
 
@@ -772,7 +776,7 @@ def _load_presets() -> None:
             knobs = {k: float(v) for k, v in entry["knobs"].items()}
             knobs["K"] = int(knobs["K"])
             profiles[int(key)] = knobs
-            if entry.get("calibrated"):
+            if entry.get("calibrated") or entry.get("status") == "calibrated":
                 calibrated.add(int(key))
         if profiles:
             ELO_PROFILES, ELO_CALIBRATED = profiles, calibrated

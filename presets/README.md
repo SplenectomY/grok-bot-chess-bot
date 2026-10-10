@@ -6,17 +6,25 @@
 malformed the worker falls back to its built-in copy of the same table and
 reports `"presets": "built-in"` in its ready line.
 
-| Anchor (Lichess) | Status | Notes |
+| Anchor (Lichess) | Status | Self-play measured vs Lichess target (ACPL / acc / blunders per 100) |
 |---|---|---|
-| 1000 | **calibrated** (2026-10-09) | ACPL 79.6 / acc 76.0% / 9.05 blunders per 100 over 1426 moves vs Lichess-1000 target 75.3 / 72.0% / 9.33 |
-| 1200 | **calibration in progress** | Not in the file yet; final values will land in a follow-up commit. Until then 1200 is interpolated between 1000 and 1400. |
-| 1400 | uncalibrated (provisional) | Extrapolated from the 1000 runs; validate before trusting |
+| 800 | field-test (2026-10-10) | 82.1 / 74.4% / 9.40 vs 82.8 / 69.9% / 9.46 (1106 moves) |
+| 1000 | **calibrated** (2026-10-09) | 79.6 / 76.0% / 9.05 vs 75.3 / 72.0% / 9.33 (1426 moves) |
+| 1200 | field-test (2026-10-10) | 65.3 / 77.1% / 6.62 vs 67.6 / 74.6% / 8.32 (1223 moves) |
+| 1400 | field-test (2026-10-10) | 60.4 / 83.7% / 4.02 vs 60.2 / 76.9% / 7.18 (1094 moves) |
+
+`status`: **calibrated** means validated and shipped as the default. **field-test** means
+the anchor matched the target ACPL in self-play but hasn't been validated in
+human games. Accuracy reads high in self-play at every level, and for 1200/1400
+the inaccuracy/mistake/blunder rates are under target, so those presets may
+play somewhat stronger than their band.
 
 Targets between anchors interpolate every knob linearly (`K` is rounded);
-targets outside the range clamp to the nearest anchor. Any knob can be
+targets outside the range clamp to the nearest anchor (below 800 → 800,
+above 1400 → 1400; sub-1000 targets interpolate between 800 and 1000). Any knob can be
 overridden for one run with `CHESS_ELO_OVERRIDES='{"T":5.0}'`.
 
-Schema per anchor: `calibrated` (bool), `knobs` (required: T, ALPHA, KAPPA, K,
+Schema per anchor: `status` (calibrated | field-test), `calibrated` (bool), `knobs` (required: T, ALPHA, KAPPA, K,
 P_BLIND, BLIND_TEMPT, BLIND_MIN_LOSS, TEACH_BONUS, TEACH_MAX_LOSS,
 GUARD_QUEEN_P, GUARD_MATE1_P), and informational `measured` / `target` /
 `method` / `note`. See ../CALIBRATION.md for how to calibrate a new anchor.

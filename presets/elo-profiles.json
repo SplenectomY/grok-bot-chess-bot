@@ -1,20 +1,181 @@
 {
   "schema": 1,
-  "description": "Human-calibrated picker presets for chess-sf-worker.py (elo mode). Target = Lichess Rapid/Classical rating. Between anchors the worker interpolates knobs linearly; outside it clamps to the nearest anchor. See CALIBRATION.md.",
+  "description": "Human-calibrated picker presets for chess-sf-worker.py (elo mode). Target = Lichess Rapid/Classical rating. Between anchors the worker interpolates knobs linearly; outside it clamps to the nearest anchor. See CALIBRATION.md. Status: calibrated = validated; field-test = self-play matched on ACPL, awaiting human-game validation.",
   "profiles": {
+    "800": {
+      "status": "field-test",
+      "calibrated": false,
+      "calibratedOn": "2026-10-10",
+      "method": "self-play batch E58b40, scored by Stockfish depth 14 (tools/calibration/metrics.py); matched on ACPL, not yet validated in human games",
+      "measured": {
+        "acpl": 82.1,
+        "acpl90ci": [
+          74.8,
+          89.7
+        ],
+        "accuracy": 74.4,
+        "per100": {
+          "inaccuracies": 7.5,
+          "mistakes": 4.16,
+          "blunders": 9.4
+        },
+        "moves": 1106
+      },
+      "target": {
+        "source": "Lichess 2025-09 rated Rapid+Classical, 800 band",
+        "acpl": 82.8,
+        "accuracy": 69.9,
+        "per100": {
+          "inaccuracies": 10.37,
+          "mistakes": 5.54,
+          "blunders": 9.46
+        }
+      },
+      "knobs": {
+        "T": 5.8,
+        "ALPHA": 0.5,
+        "KAPPA": 3.0,
+        "K": 6,
+        "P_BLIND": 0.4,
+        "BLIND_TEMPT": 12.0,
+        "BLIND_MIN_LOSS": 20.0,
+        "TEACH_BONUS": 4.0,
+        "TEACH_MAX_LOSS": 6.0,
+        "GUARD_QUEEN_P": 0.85,
+        "GUARD_MATE1_P": 0.6
+      },
+      "note": "Accuracy reads high in self-play; blunder rate on target. Targets below 800 clamp to this anchor."
+    },
     "1000": {
       "calibrated": true,
       "calibratedOn": "2026-10-09",
       "method": "self-play batch G52b36: 12 games, 1426 non-forced bot moves, scored by Stockfish depth 14 with tools/calibration/metrics.py (Lichess formulas)",
-      "measured": { "acpl": 79.6, "acpl90ci": [73.5, 85.8], "accuracy": 76.0, "per100": { "inaccuracies": 7.99, "mistakes": 3.16, "blunders": 9.05 }, "moves": 1426 },
-      "target": { "source": "Lichess 2025-09 rated Rapid+Classical, 1000 band (646 player-games)", "acpl": 75.3, "accuracy": 72.0, "per100": { "inaccuracies": 10.15, "mistakes": 5.13, "blunders": 9.33 } },
-      "knobs": { "T": 5.2, "ALPHA": 0.5, "KAPPA": 3.0, "K": 6, "P_BLIND": 0.36, "BLIND_TEMPT": 12.0, "BLIND_MIN_LOSS": 20.0, "TEACH_BONUS": 4.0, "TEACH_MAX_LOSS": 6.0, "GUARD_QUEEN_P": 0.85, "GUARD_MATE1_P": 0.6 }
+      "measured": {
+        "acpl": 79.6,
+        "acpl90ci": [
+          73.5,
+          85.8
+        ],
+        "accuracy": 76.0,
+        "per100": {
+          "inaccuracies": 7.99,
+          "mistakes": 3.16,
+          "blunders": 9.05
+        },
+        "moves": 1426
+      },
+      "target": {
+        "source": "Lichess 2025-09 rated Rapid+Classical, 1000 band (646 player-games)",
+        "acpl": 75.3,
+        "accuracy": 72.0,
+        "per100": {
+          "inaccuracies": 10.15,
+          "mistakes": 5.13,
+          "blunders": 9.33
+        }
+      },
+      "knobs": {
+        "T": 5.2,
+        "ALPHA": 0.5,
+        "KAPPA": 3.0,
+        "K": 6,
+        "P_BLIND": 0.36,
+        "BLIND_TEMPT": 12.0,
+        "BLIND_MIN_LOSS": 20.0,
+        "TEACH_BONUS": 4.0,
+        "TEACH_MAX_LOSS": 6.0,
+        "GUARD_QUEEN_P": 0.85,
+        "GUARD_MATE1_P": 0.6
+      },
+      "status": "calibrated"
+    },
+    "1200": {
+      "status": "field-test",
+      "calibrated": false,
+      "calibratedOn": "2026-10-10",
+      "method": "self-play batch P46b24, scored by Stockfish depth 14 (tools/calibration/metrics.py); matched on ACPL, not yet validated in human games",
+      "measured": {
+        "acpl": 65.3,
+        "acpl90ci": [
+          59.2,
+          72.0
+        ],
+        "accuracy": 77.1,
+        "per100": {
+          "inaccuracies": 9.48,
+          "mistakes": 3.43,
+          "blunders": 6.62
+        },
+        "moves": 1223
+      },
+      "target": {
+        "source": "Lichess 2025-09 rated Rapid+Classical, 1200 band",
+        "acpl": 67.6,
+        "accuracy": 74.6,
+        "per100": {
+          "inaccuracies": 9.78,
+          "mistakes": 4.7,
+          "blunders": 8.32
+        }
+      },
+      "knobs": {
+        "T": 4.6,
+        "ALPHA": 0.5,
+        "KAPPA": 3.0,
+        "K": 6,
+        "P_BLIND": 0.24,
+        "BLIND_TEMPT": 12.0,
+        "BLIND_MIN_LOSS": 20.0,
+        "TEACH_BONUS": 4.0,
+        "TEACH_MAX_LOSS": 5.5,
+        "GUARD_QUEEN_P": 0.875,
+        "GUARD_MATE1_P": 0.65
+      },
+      "note": "Accuracy reads high in self-play and inaccuracy/mistake/blunder rates are under target; may play slightly stronger than the band in practice."
     },
     "1400": {
+      "status": "field-test",
       "calibrated": false,
-      "note": "PROVISIONAL: extrapolated from the 1000 tuning runs (fewer blind turns, lower temperature). Not validated; targets 1100-1400 are interpolated guesses. Calibrate before trusting (see CALIBRATION.md).",
-      "target": { "source": "Lichess 2025-09 rated Rapid+Classical, 1400 band", "acpl": 60.2, "accuracy": 76.9, "per100": { "inaccuracies": 9.58, "mistakes": 4.68, "blunders": 7.18 } },
-      "knobs": { "T": 4.6, "ALPHA": 0.5, "KAPPA": 3.0, "K": 6, "P_BLIND": 0.22, "BLIND_TEMPT": 12.0, "BLIND_MIN_LOSS": 20.0, "TEACH_BONUS": 4.0, "TEACH_MAX_LOSS": 5.0, "GUARD_QUEEN_P": 0.90, "GUARD_MATE1_P": 0.7 }
+      "calibratedOn": "2026-10-10",
+      "method": "self-play batch Q38b20, scored by Stockfish depth 14 (tools/calibration/metrics.py); matched on ACPL, not yet validated in human games",
+      "measured": {
+        "acpl": 60.4,
+        "acpl90ci": [
+          55.0,
+          66.2
+        ],
+        "accuracy": 83.7,
+        "per100": {
+          "inaccuracies": 8.14,
+          "mistakes": 2.74,
+          "blunders": 4.02
+        },
+        "moves": 1094
+      },
+      "target": {
+        "source": "Lichess 2025-09 rated Rapid+Classical, 1400 band",
+        "acpl": 60.2,
+        "accuracy": 76.9,
+        "per100": {
+          "inaccuracies": 9.58,
+          "mistakes": 4.68,
+          "blunders": 7.18
+        }
+      },
+      "knobs": {
+        "T": 3.8,
+        "ALPHA": 0.5,
+        "KAPPA": 3.0,
+        "K": 6,
+        "P_BLIND": 0.2,
+        "BLIND_TEMPT": 12.0,
+        "BLIND_MIN_LOSS": 20.0,
+        "TEACH_BONUS": 4.0,
+        "TEACH_MAX_LOSS": 5.0,
+        "GUARD_QUEEN_P": 0.9,
+        "GUARD_MATE1_P": 0.7
+      },
+      "note": "Accuracy reads high in self-play and inaccuracy/mistake/blunder rates are under target; may play slightly stronger than the band in practice."
     }
   }
 }
