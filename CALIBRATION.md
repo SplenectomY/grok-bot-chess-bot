@@ -86,13 +86,39 @@ searches. Expect ACPL in the 68-80 range from game to game. Tests ran on a
 heavily loaded shared machine, and the worker includes engine respawn and retry
 for that case.
 
+### 800 / 1200 / 1400 results (2026-10-10, self-play, no ponder, depth 14)
+
+| tag | elo | T | P_BLIND | moves | ACPL (90% CI) | acc % | I/M/B per 100 |
+|---|---|---|---|---|---|---|---|
+| P44b28 | 1200 | 4.4 | .28 | 910 | 70.7 (63.5-78.4) | 78.4 | 7.58/2.31/5.71 |
+| P40b26 | 1200 | 4.0 | .26 | 1211 | 59.0 (53.9-64.5) | 83.5 | 7.51/2.73/4.46 |
+| **P46b24 (chosen)** | **1200** | **4.6** | **.24** | **1223** | **65.3 (59.2-72.0)** | **77.1** | **9.48/3.43/6.62** |
+| **Q38b20 (chosen)** | **1400** | **3.8** | **.20** | **1094** | **60.4 (55.0-66.2)** | **83.7** | **8.14/2.74/4.02** |
+| Q34b16 | 1400 | 3.4 | .16 | 1188 | 55.7 (51.0-60.4) | 82.3 | 9.51/1.09/4.12 |
+| **E58b40 (chosen)** | **800** | **5.8** | **.40** | **1106** | **82.1 (74.8-89.7)** | **74.4** | **7.50/4.16/9.40** |
+| E64b44 | 800 | 6.4 | .44 | 993 | 101.3 (92.4-110.5) | 65.3 | 10.88/3.73/15.21 |
+
+Targets (Lichess Rapid/Classical): 800 = 82.8 / 69.9 / 10.37-5.54-9.46;
+1200 = 67.6 / 74.6 / 9.78-4.70-8.32; 1400 = 60.2 / 76.9 / 9.58-4.68-7.18.
+
+Other knobs for these anchors: TEMPT 12, MIN_LOSS 20, ALPHA 0.5, KAPPA 3, K 6,
+TEACH_BONUS 4. TEACH_MAX_LOSS / GUARD_QUEEN_P / GUARD_MATE1_P are
+6.0/.85/.60 (800), 5.5/.875/.65 (1200), and 5.0/.90/.70 (1400).
+
+These anchors are shipped as **field-test**. Each one matches its band's ACPL,
+but **accuracy reads high in self-play** (by 2.5-7 points), and for **1200 and
+1400 the inaccuracy, mistake, and blunder rates are under target**. The bot's
+errors cluster into fewer, larger losses than human errors do, so these
+presets may play somewhat stronger than their label. Sub-1000 targets now
+interpolate between the 800 and 1000 anchors instead of clamping to 1000.
+
 ## 4. Calibrating a new level (e.g. 1200)
 
 1. Pick the target row from `calib_table.txt`.
 2. Start from interpolated knobs. Raise strength mainly by lowering `T` and
    `P_BLIND`, and by raising `GUARD_*_P` slightly.
-3. Run `CHESS_ELO_OVERRIDES='{"T":4.8,"P_BLIND":0.30}' tools/calibration/batch.sh
-   R1200a 12 self 0 '{"T":4.8,"P_BLIND":0.30}' 100 6 1200`. Use at least 10 games
+3. Run `tools/calibration/batch_elo.sh 1200 R1200a 12 self 0 '{"T":4.8,"P_BLIND":0.30}'`
+   (or `batch.sh TAG N OPP PONDER OVERRIDES SEEDBASE PAR ELO`). Use at least 10 games
    (more than 1000 moves) per candidate, and confirm the winner with a second
    batch with ponder on and a different seed base.
 4. Add the anchor to `presets/elo-profiles.json` with `"calibrated": true`

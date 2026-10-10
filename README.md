@@ -114,10 +114,17 @@ re-gated with a fresh full-strength check.
 
 ## Presets
 
-`presets/elo-profiles.json`: **1000 is calibrated** (ACPL 79.6, accuracy 76%,
-~9 blunders per 100 moves over 1426 moves, vs Lichess-1000 targets of 75.3,
-72%, and 9.33). Other anchors are marked `calibrated: false`. 1200 calibration
-is in progress. Targets between anchors interpolate. See
+`presets/elo-profiles.json` has anchors at 800, 1000, 1200, and 1400:
+
+* **1000 is calibrated.** It's the shipped default: ACPL 79.6, accuracy 76%, ~9
+  blunders per 100 moves over 1426 moves, vs Lichess-1000 targets of 75.3, 72%,
+  and 9.33.
+* **800, 1200, and 1400 are field-test presets.** They match their band's ACPL
+  in self-play but haven't been validated in human games yet. 1200 and 1400
+  blunder less than their bands, so they may play a bit stronger than labelled.
+
+Targets between anchors interpolate. Below 800 clamps to 800, and above 1400
+clamps to 1400. See
 [presets/README.md](presets/README.md) and [CALIBRATION.md](CALIBRATION.md) for
 how to calibrate a new level with `tools/calibration/`.
 
