@@ -136,21 +136,22 @@
     "1400": {
       "status": "field-test",
       "calibrated": false,
-      "calibratedOn": "2026-10-10",
-      "method": "self-play batch Q38b20, scored by Stockfish depth 14 (tools/calibration/metrics.py); matched on ACPL, not yet validated in human games",
+      "calibratedOn": "2026-10-12",
+      "method": "self-play batch W46b10m12g (12 games), scored by Stockfish depth 18 (tools/calibration/metrics.py); retuned after live games showed 6.7 blunders/100; awaiting human-game validation",
       "measured": {
-        "acpl": 60.4,
+        "acpl": 56.0,
         "acpl90ci": [
-          55.0,
-          66.2
+          52.4,
+          59.6
         ],
-        "accuracy": 83.7,
+        "accuracy": 86.3,
         "per100": {
-          "inaccuracies": 8.14,
-          "mistakes": 2.74,
-          "blunders": 4.02
+          "inaccuracies": 10.88,
+          "mistakes": 4.03,
+          "blunders": 3.12
         },
-        "moves": 1094
+        "moves": 1636,
+        "scoreDepth": 18
       },
       "target": {
         "source": "Lichess 2025-09 rated Rapid+Classical, 1400 band",
@@ -163,19 +164,57 @@
         }
       },
       "knobs": {
-        "T": 3.8,
+        "T": 4.6,
         "ALPHA": 0.5,
         "KAPPA": 3.0,
         "K": 6,
-        "P_BLIND": 0.2,
-        "BLIND_TEMPT": 12.0,
-        "BLIND_MIN_LOSS": 20.0,
+        "P_BLIND": 0.1,
+        "BLIND_TEMPT": 10.0,
+        "BLIND_MIN_LOSS": 12.0,
         "TEACH_BONUS": 4.0,
         "TEACH_MAX_LOSS": 5.0,
-        "GUARD_QUEEN_P": 0.9,
-        "GUARD_MATE1_P": 0.7
+        "GUARD_QUEEN_P": 0.97,
+        "GUARD_MATE1_P": 0.85
       },
-      "note": "Accuracy reads high in self-play and inaccuracy/mistake/blunder rates are under target; may play slightly stronger than the band in practice."
+      "note": "Live 1400 games blundered ~1.6x the self-play rate, so this preset targets ~3 blunders/100 in self-play. Accuracy reads high in self-play (86 vs 83.7 target).",
+      "previous": {
+        "date": "2026-10-10",
+        "knobs": {
+          "T": 3.8,
+          "P_BLIND": 0.2,
+          "BLIND_TEMPT": 12.0,
+          "BLIND_MIN_LOSS": 20.0,
+          "GUARD_QUEEN_P": 0.9,
+          "GUARD_MATE1_P": 0.7
+        },
+        "selfplay_d18": {
+          "acpl": 62.5,
+          "acpl90ci": [
+            57.0,
+            68.2
+          ],
+          "accuracy": 83.2,
+          "per100": [
+            8.41,
+            3.29,
+            4.3
+          ]
+        },
+        "live_5games": {
+          "moves": 225,
+          "acpl": 57.0,
+          "acpl90ci": [
+            43.5,
+            71.5
+          ],
+          "accuracy": 82.9,
+          "per100": [
+            6.67,
+            2.22,
+            6.67
+          ]
+        }
+      }
     }
   }
 }

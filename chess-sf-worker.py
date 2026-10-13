@@ -759,8 +759,9 @@ ELO_PROFILES: dict[int, dict] = {
     # FIELD-TEST 2026-10-10: self-play calibrated vs Lichess Rapid/Classical (see CALIBRATION.md)
     1200: dict(T=4.6, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.24, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=5.5, GUARD_QUEEN_P=0.875, GUARD_MATE1_P=0.65),
-    1400: dict(T=3.8, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.20, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
-               TEACH_MAX_LOSS=5.0, GUARD_QUEEN_P=0.90, GUARD_MATE1_P=0.70),
+    # 1400 retuned 2026-10-12 (batch W46b10m12g): lower blind rate, blind slips mostly mistakes, tighter queen/mate-1 guard
+    1400: dict(T=4.6, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.10, BLIND_TEMPT=10.0, BLIND_MIN_LOSS=12.0, TEACH_BONUS=4.0,
+               TEACH_MAX_LOSS=5.0, GUARD_QUEEN_P=0.97, GUARD_MATE1_P=0.85),
 }
 ELO_CALIBRATED = {1000}   # fully calibrated; 800/1200/1400 are field-test (self-play matched, awaiting human games)
 PRESETS_SOURCE = "built-in"

@@ -112,6 +112,35 @@ errors cluster into fewer, larger losses than human errors do, so these
 presets may play somewhat stronger than their label. Sub-1000 targets now
 interpolate between the 800 and 1000 anchors instead of clamping to 1000.
 
+### 1400 retune (2026-10-12, self-play, no ponder, scored at depth 18)
+
+Live 1400 games (5 games, 225 bot moves, all vs one ~1350 human) blundered
+6.67 per 100 moves (90% CI on ACPL 43.5-71.5, ACPL 57.0), about 1.7x the old self-play figure,
+while ACPL was on target. Rescoring the old batch at depth 18 changes little
+(Q38b20: 62.5 / 4.30 blunders), so scoring depth does not explain the gap.
+Most self-play blunders come from chosen blind-spot moves (with MIN_LOSS 20
+every chosen blind move is a blunder). Lowering P_BLIND alone barely moved the
+self-play blunder rate; making blind slips smaller (MIN_LOSS 12, TEMPT 10) and
+tightening the queen / mate-in-1 guard did.
+
+| tag | knobs (others as before) | moves | ACPL (90% CI) | acc % | I/M/B per 100 |
+|---|---|---|---|---|---|
+| Q38b20 (old, rescored d18) | T3.8 Pb.20 | 1094 | 62.5 (57.0-68.2) | 83.2 | 8.41/3.29/4.30 |
+| R40b14 | T4.0 Pb.14 | 1267 | 55.4 (50.1-60.8) | 82.3 | 8.37/2.13/4.89 |
+| S38b10 | T3.8 Pb.10 | 1161 | 55.2 (50.2-60.2) | 84.4 | 11.71/2.76/3.96 |
+| S42b12m12 + repeat | T4.2 Pb.12 m12 t10 | 2693 | 56.2 (53.3-59.2) | 84.3 | 10.40/4.83/4.27 |
+| V44b12m12 | T4.4 Pb.12 m12 t10 | 1630 | 55.8 (51.9-59.8) | 83.5 | 10.74/4.60/5.03 |
+| U44+W44 (pooled) | T4.4 Pb.10 m12 t10 GQ.97 GM.85 | 2890 | 58.5 (55.5-61.7) | 83.9 | 12.08/4.91/4.22 |
+| **W46b10m12g (chosen)** | **T4.6 Pb.10 m12 t10 GQ.97 GM.85** | **1636** | **56.0 (52.4-59.6)** | **86.3** | **10.88/4.03/3.12** |
+
+New 1400 knobs: T 4.6, P_BLIND 0.10, BLIND_TEMPT 10, BLIND_MIN_LOSS 12,
+GUARD_QUEEN_P 0.97, GUARD_MATE1_P 0.85 (ALPHA, KAPPA, K, TEACH unchanged).
+Still **field-test**. Self-play blunders are aimed below 4 on purpose, because
+live games ran about 1.6x the self-play rate. Accuracy still reads high. Error counts are noisy
+(about 50 blunders per batch), so validate with more human games. 1200 uses the
+same MIN_LOSS 20 blind mechanism, but its one live game (5.1 blunders/100) shows
+no excess yet.
+
 ## 4. Calibrating a new level (e.g. 1200)
 
 1. Pick the target row from `calib_table.txt`.
