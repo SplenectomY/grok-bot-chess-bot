@@ -42,7 +42,10 @@
         "TEACH_BONUS": 4.0,
         "TEACH_MAX_LOSS": 6.0,
         "GUARD_QUEEN_P": 0.85,
-        "GUARD_MATE1_P": 0.6
+        "GUARD_MATE1_P": 0.6,
+        "GUARD_HANG_OBV_P": 0,
+        "GUARD_HANG_SUB_P": 0,
+        "GUARD_HANG_DROP": 250.0
       },
       "note": "Accuracy reads high in self-play; blunder rate on target. Targets below 800 clamp to this anchor."
     },
@@ -85,7 +88,10 @@
         "TEACH_BONUS": 4.0,
         "TEACH_MAX_LOSS": 6.0,
         "GUARD_QUEEN_P": 0.85,
-        "GUARD_MATE1_P": 0.6
+        "GUARD_MATE1_P": 0.6,
+        "GUARD_HANG_OBV_P": 0,
+        "GUARD_HANG_SUB_P": 0,
+        "GUARD_HANG_DROP": 250.0
       },
       "status": "calibrated"
     },
@@ -129,28 +135,36 @@
         "TEACH_BONUS": 4.0,
         "TEACH_MAX_LOSS": 5.5,
         "GUARD_QUEEN_P": 0.875,
-        "GUARD_MATE1_P": 0.65
+        "GUARD_MATE1_P": 0.65,
+        "GUARD_HANG_OBV_P": 0.55,
+        "GUARD_HANG_SUB_P": 0.3,
+        "GUARD_HANG_DROP": 200.0
       },
-      "note": "Accuracy reads high in self-play and inaccuracy/mistake/blunder rates are under target; may play slightly stronger than the band in practice."
+      "note": "Accuracy reads high in self-play and inaccuracy/mistake/blunder rates are under target; may play slightly stronger than the band in practice. Hanging guard .55/.30 (drop 200) added 2026-10-15 without re-calibration."
     },
     "1400": {
       "status": "field-test",
       "calibrated": false,
-      "calibratedOn": "2026-10-12",
-      "method": "self-play batch W46b10m12g (12 games), scored by Stockfish depth 18 (tools/calibration/metrics.py); retuned after live games showed 6.7 blunders/100; awaiting human-game validation",
+      "calibratedOn": "2026-10-15",
+      "method": "self-play batches H6+H7+C1+C2 (T 5.6-5.8, 36 games), scored by Stockfish depth 18; hanging-piece guard added after the retuned preset showed ~9 practical blunders/100 live; field-test",
       "measured": {
-        "acpl": 56.0,
+        "acpl": 53.3,
         "acpl90ci": [
-          52.4,
-          59.6
+          51.3,
+          55.5
         ],
-        "accuracy": 86.3,
+        "accuracy": 85.1,
         "per100": {
-          "inaccuracies": 10.88,
-          "mistakes": 4.03,
-          "blunders": 3.12
+          "inaccuracies": 13.2,
+          "mistakes": 4.67,
+          "blunders": 3.86
         },
-        "moves": 1636,
+        "practicalBlundersPer100": 5.15,
+        "practical90ci": [
+          4.6,
+          5.73
+        ],
+        "moves": 4173,
         "scoreDepth": 18
       },
       "target": {
@@ -164,7 +178,7 @@
         }
       },
       "knobs": {
-        "T": 4.6,
+        "T": 5.7,
         "ALPHA": 0.5,
         "KAPPA": 3.0,
         "K": 6,
@@ -174,9 +188,12 @@
         "TEACH_BONUS": 4.0,
         "TEACH_MAX_LOSS": 5.0,
         "GUARD_QUEEN_P": 0.97,
-        "GUARD_MATE1_P": 0.85
+        "GUARD_MATE1_P": 0.85,
+        "GUARD_HANG_OBV_P": 0.85,
+        "GUARD_HANG_SUB_P": 0.55,
+        "GUARD_HANG_DROP": 150.0
       },
-      "note": "Live 1400 games blundered ~1.6x the self-play rate, so this preset targets ~3 blunders/100 in self-play. Accuracy reads high in self-play (86 vs 83.7 target).",
+      "note": "Practical blunders = metric blunders + clamp-hidden material losses (tools/calibration/practical.py). Live play has run about 1.6-1.9x self-play blunder rates; validate in human games. ACPL reads slightly strong (53 vs 60).",
       "previous": {
         "date": "2026-10-10",
         "knobs": {

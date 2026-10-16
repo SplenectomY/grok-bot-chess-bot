@@ -141,6 +141,51 @@ live games ran about 1.6x the self-play rate. Accuracy still reads high. Error c
 same MIN_LOSS 20 blind mechanism, but its one live game (5.1 blunders/100) shows
 no excess yet.
 
+### Hanging-piece guard (2026-10-15)
+
+Live games with the retuned 1400 preset showed about 9 practical blunders per 100 moves:
+attacked pieces left where they were, rooks left hanging, walking into forks. Practical
+blunders are metric blunders plus clamp-hidden material losses, counted by
+`tools/calibration/practical.py`: a move counts if it loses at least 3 pawns of material within 5 plies
+while the raw eval drops at least 100cp. The win-chance metric misses many of these
+once a game is already lost.
+
+After the picker draws a move, the guard classifies it:
+* **obvious**: it loses at least `GUARD_HANG_DROP` cp against the top move, and SEE
+  (`material_net`) is at least 2 pawns worse than the top move's (a piece en prise,
+  or an attacked piece ignored);
+* **subtle**: same drop, and the material swing along the deep PV (5 plies) is at least 3 pawns
+  worse than along the top move's PV (forks, two-move tactics).
+
+With probability `GUARD_HANG_OBV_P` / `GUARD_HANG_SUB_P` the move is discarded and
+the picker re-draws from the remaining candidates, up to 6 times. Otherwise the blunder is kept.
+The guard never blocks a move outright.
+
+| anchor | OBV_P | SUB_P | DROP | status |
+|---|---|---|---|---|
+| 800 | 0 | 0 | 250 | off |
+| 1000 | 0 | 0 | 250 | off (keeps the locked calibration) |
+| 1200 | .55 | .30 | 200 | set, not re-calibrated |
+| 1400 | .85 | .55 | 150 | calibrated (T raised 4.6 -> 5.7) |
+
+1400 self-play, depth 18 (practical = practical blunders per 100):
+
+| tag | knobs | moves | ACPL (90% CI) | acc | I/M/B per 100 | practical (90% CI) |
+|---|---|---|---|---|---|---|
+| W46b10m12g (before) | no hang guard | 1636 | 56.0 (52.4-59.6) | 86.3 | 10.88/4.03/3.12 | 5.20 (4.34-6.11) |
+| H2 | .90/.60 drop 250 | 1636 | 50.9 (47.4-54.3) | 86.2 | 11.37/3.91/3.06 | 4.22 (3.36-5.01) |
+| H6 | .80/.50 drop 150 T5.6 | 1515 | 58.2 (54.5-61.7) | 84.7 | 13.33/4.42/4.49 | 5.28 (4.36-6.20) |
+| H7 | .90/.60 drop 150 T5.8 | 1347 | 53.9 (50.4-57.5) | 86.3 | 13.07/4.38/3.41 | 4.75 (3.79-5.72) |
+| C1+C2 | .85/.55 drop 150 T5.7 | 1311 | 47.1 (43.6-50.6) | 84.3 | 13.20/5.26/3.59 | 5.42 (4.35-6.48) |
+| D1+D2 | same + P_BLIND .14 | 1283 | 56.4 (52.4-60.5) | 83.7 | 12.86/5.69/5.46 | 7.25 (6.08-8.42) |
+| **H6+H7+C1+C2 (shipped family)** | **T5.6-5.8, ~.85/.55** | **4173** | **53.3 (51.3-55.5)** | **85.1** | **13.20/4.67/3.86** | **5.15 (4.60-5.73)** |
+
+Self-play live-equivalent: the old live pools ran 8.9 (old 1400) and 9.9 (retuned 1400)
+practical blunders per 100 against about 5.2 in self-play. 1000 check, guard off: 6 games, 765 moves,
+ACPL 74.1 (66.1-82.7), practical 10.46, against the calibrated G52b36 79.6 / 11.29. No
+material change. In self-play, ACPL and blunder rate are tightly coupled: no setting gave
+ACPL of 55 or more with fewer than 5 practical blunders per 100.
+
 ## 4. Calibrating a new level (e.g. 1200)
 
 1. Pick the target row from `calib_table.txt`.

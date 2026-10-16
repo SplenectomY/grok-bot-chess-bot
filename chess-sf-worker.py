@@ -752,16 +752,20 @@ import math
 ELO_PROFILES: dict[int, dict] = {
     # FIELD-TEST 2026-10-10: sub-1000 targets interpolate toward this anchor (below 800: clamp to 800)
     800: dict(T=5.8, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.40, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
-              TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6),
+              TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6,
+              GUARD_HANG_OBV_P=0.0, GUARD_HANG_SUB_P=0.0, GUARD_HANG_DROP=250.0),
     # CALIBRATED 2026-10-09 by self-play, see CALIBRATION.md
     1000: dict(T=5.2, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.36, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
-               TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6),
+               TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6,
+               GUARD_HANG_OBV_P=0.0, GUARD_HANG_SUB_P=0.0, GUARD_HANG_DROP=250.0),
     # FIELD-TEST 2026-10-10: self-play calibrated vs Lichess Rapid/Classical (see CALIBRATION.md)
     1200: dict(T=4.6, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.24, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
-               TEACH_MAX_LOSS=5.5, GUARD_QUEEN_P=0.875, GUARD_MATE1_P=0.65),
-    # 1400 retuned 2026-10-12 (batch W46b10m12g): lower blind rate, blind slips mostly mistakes, tighter queen/mate-1 guard
-    1400: dict(T=4.6, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.10, BLIND_TEMPT=10.0, BLIND_MIN_LOSS=12.0, TEACH_BONUS=4.0,
-               TEACH_MAX_LOSS=5.0, GUARD_QUEEN_P=0.97, GUARD_MATE1_P=0.85),
+               TEACH_MAX_LOSS=5.5, GUARD_QUEEN_P=0.875, GUARD_MATE1_P=0.65,
+               GUARD_HANG_OBV_P=0.55, GUARD_HANG_SUB_P=0.3, GUARD_HANG_DROP=200.0),
+    # 1400 retuned 2026-10-12 (W46b10m12g) + hanging-piece guard 2026-10-15 (T 5.7, see CALIBRATION.md)
+    1400: dict(T=5.7, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.10, BLIND_TEMPT=10.0, BLIND_MIN_LOSS=12.0, TEACH_BONUS=4.0,
+               TEACH_MAX_LOSS=5.0, GUARD_QUEEN_P=0.97, GUARD_MATE1_P=0.85,
+               GUARD_HANG_OBV_P=0.85, GUARD_HANG_SUB_P=0.55, GUARD_HANG_DROP=150.0),
 }
 ELO_CALIBRATED = {1000}   # fully calibrated; 800/1200/1400 are field-test (self-play matched, awaiting human games)
 PRESETS_SOURCE = "built-in"
@@ -880,6 +884,39 @@ def _our_recent_checks(moves: list[str] | None) -> int:
         n += 1
         i -= 2
     return n
+
+
+GUARD_HANG_DROP = 250      # hanging-piece guard: chosen move must lose >= this vs top (deep cp)
+GUARD_HANG_MAT = 2         # ...and >= this many pawns of material (SEE net or deep-PV swing)
+
+
+def _pv_material_swing(board: chess.Board, pv: list, plies: int = 4) -> int:
+    """Material (pawns, our POV) lost along the first `plies` moves of a PV."""
+    b = board.copy(stack=False)
+    us = b.turn
+    def mat(x):
+        return sum(PIECE_VAL.get(p.piece_type, 0) * (1 if p.color == us else -1) for p in x.piece_map().values())
+    m0 = mat(b)
+    for mv in pv[:plies]:
+        if mv not in b.legal_moves:
+            break
+        b.push(mv)
+    return m0 - mat(b)
+
+
+def hang_class(board, chosen, top, deep, deep_infos, min_drop=GUARD_HANG_DROP):
+    """None | 'obvious' (piece en prise / attacked piece ignored, SEE-visible)
+    | 'subtle' (material lost to a short forcing line: forks, 2-move tactics)."""
+    drop = deep[top] - deep[chosen]
+    if drop < min_drop or chosen == top:
+        return None
+    if material_net(board, top) - material_net(board, chosen) >= GUARD_HANG_MAT:
+        return "obvious"
+    pv_c = [chosen] + list(deep_infos[chosen].get("pv") or [])[1:]
+    pv_t = [top] + list(deep_infos[top].get("pv") or [])[1:]
+    if _pv_material_swing(board, pv_c, 5) - _pv_material_swing(board, pv_t, 5) >= GUARD_HANG_MAT + 1:
+        return "subtle"
+    return None
 
 
 def elo_choose(board: chess.Board, elo: int, legal_sans: list[str] | None,
@@ -1025,17 +1062,21 @@ def elo_choose(board: chess.Board, elo: int, legal_sans: list[str] | None,
     pool = list(cands)
     chosen, prob = draw(pool)
     # Guard (loosened): queen for nothing / allowing mate-in-1.
-    for _ in range(4):
+    for _ in range(6):
         net_loss = material_net(board, top) - material_net(board, chosen)
         drop = top_cp - deep[chosen]
         q = net_loss >= 8 and drop >= 500
         mate1 = mate_of.get(chosen) is not None and mate_of[chosen] < 0 and abs(mate_of[chosen]) <= 1 \
             and not (mate_of.get(top) is not None and mate_of[top] < 0)
-        p_block = P["GUARD_QUEEN_P"] if q else P["GUARD_MATE1_P"] if mate1 else 0.0
+        hc = None if (q or mate1) else hang_class(board, chosen, top, deep, deep_infos,
+                                                       P.get("GUARD_HANG_DROP", GUARD_HANG_DROP))
+        p_block = (P["GUARD_QUEEN_P"] if q else P["GUARD_MATE1_P"] if mate1 else
+                   P.get("GUARD_HANG_OBV_P", 0.0) if hc == "obvious" else
+                   P.get("GUARD_HANG_SUB_P", 0.0) if hc == "subtle" else 0.0)
         if p_block <= 0:
             break
         roll = RNG.random()
-        what = "queen for nothing" if q else "allows mate-in-1"
+        what = "queen for nothing" if q else "allows mate-in-1" if mate1 else f"hangs material ({hc})"
         if roll < p_block and len(pool) > 1:
             events.append(f"guard-redraw: {san[chosen]} {what} (drop {drop}cp; roll {roll:.2f}<{p_block:.2f})")
             pool = [m for m in pool if m != chosen]
