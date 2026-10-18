@@ -186,6 +186,78 @@ ACPL 74.1 (66.1-82.7), practical 10.46, against the calibrated G52b36 79.6 / 11.
 material change. In self-play, ACPL and blunder rate are tightly coupled: no setting gave
 ACPL of 55 or more with fewer than 5 practical blunders per 100.
 
+### Per-game blunder budget + material / mate-in-2 / win-chance guard (2026-10-18)
+
+Live 1400 games still showed hangs the cp-drop guard could not see: EX7VDH 27.Nd4 (a
+rook, raw drop only 94cp because the game was already lost at -849) and 31.Nxa5 (allowed a
+mating net; depth 12 does not see the mate). The live bot pool ran 13/199 = 6.53 practical
+blunders per 100 (KTS87H + EX7VDH era). Two picker changes, all knobs data in
+`presets/elo-profiles.json` (built-in fallback mirrored in `chess-sf-worker.py`):
+
+1. **Material rule** (`GUARD_MAT_ON`), independent of the eval clamp: after the existing
+   hang tests, a candidate is a hang if its SEE net is >= 3 pawns worse than the top
+   move's (**obvious**) or its 5-ply PV material swing is >= 3 pawns worse (**subtle**),
+   and the raw (unclamped, mate = 3000) eval drop is >= 40cp in decided positions
+   (|raw top| >= 300cp) or >= 100cp otherwise. A first version used 40cp everywhere and
+   fired too often in balanced positions (about 6.5 redraws per 100 moves). The queen test also uses
+   the raw drop when the rule is on. **`GUARD_MATE_N`** = 2: the guard also catches
+   allowing mate-in-2 (not only mate-in-1) when the top move does not allow mate.
+2. **Win-chance guard** (`GUARD_WC_P`): a non-material Lichess-scale blunder
+   (deep win-chance drop >= 15 points against the top move) that no other test flagged.
+   About 70% of the practical blunders left after change 1 were of this kind, so without it
+   the budget had little to act on.
+3. **Per-game blunder budget** (`BUDGET_ON`, `B1_*`, `B2_*`): a bot move that reaches the
+   board flagged (the guard kept it) or losing >= 15 win% is recorded as a (position, SAN)
+   pair. The pairs are persisted per `gameId` (the loop sends `room:gameNumber`) under
+   `CHESS_BUDGET_DIR` or `<worker dir>/.budget/`, so the count survives worker/loop
+   restarts. The count is recomputed from the game's move list on each request. After 1
+   such blunder, guard probabilities are raised to at least `B1_*` and `P_BLIND` is multiplied
+   by `B1_BLIND`. After 2 or more, `B2_*` applies. A cached/pondered move drawn at a lower budget is
+   discarded.
+
+| anchor | MATE_N | MAT_ON | WC_P | budget | B1 obv/sub/queen/mate/wc, blind x | B2 obv/sub/queen/mate/wc, blind x |
+|---|---|---|---|---|---|---|
+| 800 | 1 | off | 0 | off | - | - |
+| 1000 | 1 | off | 0 | off | - (locked calibration untouched) | - |
+| 1200 | 2 | on | 0 | on | .85/.55/.95/.90/.40, x.5 | .95/.80/.99/.97/.70, x0 |
+| 1400 | 2 | on | 0 | on | .93/.65/.99/.95/.60, x.7 | .97/.80/1/1/.85, x.4 |
+
+1400 `T` was raised 5.7 -> 7.5 to keep ACPL at the previous self-play level (more small
+errors, fewer blunders). 1200 got the new knobs but was **not re-measured**.
+
+Regression (guard_kind replayed on game positions, 1400 profile): EX7VDH 5.Nb5 obvious,
+10.Bxb4 obvious, **27.Nd4 obvious (material rule: 5 pawns, raw drop 94cp; old guard: none)**,
+**31.Nxa5 obvious (material rule: 3 pawns, raw drop 109cp; old guard: none)**. KTS87H 34...Re2+
+(sound sacrifice, best) not flagged, 32...Re4+ not flagged, 34...Qxg3+ subtle, 34...Rxf4+ obvious.
+Synthetic back-rank mate-in-1 -> mate (1000: mate), mate-in-2 -> mate (1000: subtle, old
+behaviour). The 1000 profile is unchanged by the budget and win-chance guard. budget_count and
+persistence across restart pass, and the end-to-end worker protocol passes.
+
+1400 self-play, depth 18, seeds 900-1200 (BG0 = seeds 701-706); practical = per 100:
+
+| set | knobs | games | moves | ACPL | acc | I/M/B per 100 | practical (90% CI) |
+|---|---|---|---|---|---|---|---|
+| OLD (BG0+BO1-4) | 2026-10-15 behaviour, T5.7 | 30 | 3696 | 52.0 | 85.4 | 11.99/4.82/3.95 | 5.14 (4.57-5.74) |
+| BM | material rule + budget, no WC, T5.7 | 24 | 3111 | 49.5 | 84.9 | 11.64/4.76/4.21 | 5.21 (4.56-5.88) |
+| BW | + WC guard, T5.7 | 24 | 3026 | 46.8 | 85.7 | 12.62/5.12/3.14 | 3.93 (3.37-4.56) |
+| T7 | + WC, T7.0 | 24 | 2979 | 52.8 | 85.6 | 13.86/5.07/3.39 | 4.50 (3.89-5.14) |
+| T8 | + WC, T8.0 | 24 | 3054 | 56.9 | 84.9 | 13.36/5.44/3.34 | 4.39 (3.80-5.01) |
+| BX | T8.0 + base WC_P .35 | 24 | 2904 | 53.9 | 84.5 | 12.95/6.06/3.48 | 4.27 (3.65-4.89) |
+| **BF (shipped)** | **T7.5, seeds 900-1600** | **48** | **5655** | **51.1** | **85.6** | **12.68/5.68/3.41** | **4.46 (4.03-4.92)** |
+
+ACPL is the move-weighted mean of 6-game chunks and acc is the mean of chunk means. In BF the
+budget was active on 69% of bot moves: most games see an early >= 15 win% slip by
+one side, so B1/B2 are effectively the steady state after the opening. Guard events per
+5655 moves: hang redraws 538, material-rule redraws 244, win-chance redraws 65, queen 26, mate 4;
+kept flagged moves 138 + 29 (win-chance). Self-play blunder rates have run below live
+(the old 1400 self-play 5.15 against 6.53 in the latest live pool), so, scaling by that ratio as a rough
+estimate only, expect live near 5.7 practical blunders per 100. Validate with human games. ACPL still reads strong against the
+Lichess 1400 band (51 vs 60.2), as before.
+
+**Market template:** the template copy of the worker/presets was **not** restaged. It needs
+a restage with this worker, `presets/elo-profiles.json` and `chess-loop-teach.mjs`
+(gameId in the choose message).
+
 ## 4. Calibrating a new level (e.g. 1200)
 
 1. Pick the target row from `calib_table.txt`.

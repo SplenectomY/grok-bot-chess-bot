@@ -16,3 +16,4 @@ annotate-needed-*
 tools/calibration/*/
 !tools/calibration/
 .DS_Store
+.budget/

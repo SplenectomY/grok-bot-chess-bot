@@ -746,6 +746,7 @@ def analyse_choose(board: chess.Board, skill: int, legal_sans: list[str] | None)
 #     scoring ≥ 0 exists; after two consecutive checks, further checks must be
 #     ~best (no endless checking that throws away the win).
 import math
+import re
 
 # Built-in fallback presets. The canonical copy lives in presets/elo-profiles.json
 # (loaded below, overrides these). See CALIBRATION.md.
@@ -753,19 +754,24 @@ ELO_PROFILES: dict[int, dict] = {
     # FIELD-TEST 2026-10-10: sub-1000 targets interpolate toward this anchor (below 800: clamp to 800)
     800: dict(T=5.8, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.40, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
               TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6,
-              GUARD_HANG_OBV_P=0.0, GUARD_HANG_SUB_P=0.0, GUARD_HANG_DROP=250.0),
+              GUARD_HANG_OBV_P=0.0, GUARD_HANG_SUB_P=0.0, GUARD_HANG_DROP=250.0,
+              GUARD_MATE_N=1.0, GUARD_MAT_ON=0.0, BUDGET_ON=0.0, B1_OBV=0.0, B1_SUB=0.0, B1_QUEEN=0.0, B1_MATE=0.0, B1_BLIND=1.0, B2_OBV=0.0, B2_SUB=0.0, B2_QUEEN=0.0, B2_MATE=0.0, B2_BLIND=1.0, GUARD_WC_P=0.0, B1_WC=0.0, B2_WC=0.0),
     # CALIBRATED 2026-10-09 by self-play, see CALIBRATION.md
     1000: dict(T=5.2, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.36, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6,
-               GUARD_HANG_OBV_P=0.0, GUARD_HANG_SUB_P=0.0, GUARD_HANG_DROP=250.0),
+               GUARD_HANG_OBV_P=0.0, GUARD_HANG_SUB_P=0.0, GUARD_HANG_DROP=250.0,
+              GUARD_MATE_N=1.0, GUARD_MAT_ON=0.0, BUDGET_ON=0.0, B1_OBV=0.0, B1_SUB=0.0, B1_QUEEN=0.0, B1_MATE=0.0, B1_BLIND=1.0, B2_OBV=0.0, B2_SUB=0.0, B2_QUEEN=0.0, B2_MATE=0.0, B2_BLIND=1.0, GUARD_WC_P=0.0, B1_WC=0.0, B2_WC=0.0),
     # FIELD-TEST 2026-10-10: self-play calibrated vs Lichess Rapid/Classical (see CALIBRATION.md)
     1200: dict(T=4.6, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.24, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=5.5, GUARD_QUEEN_P=0.875, GUARD_MATE1_P=0.65,
-               GUARD_HANG_OBV_P=0.55, GUARD_HANG_SUB_P=0.3, GUARD_HANG_DROP=200.0),
+               GUARD_HANG_OBV_P=0.55, GUARD_HANG_SUB_P=0.3, GUARD_HANG_DROP=200.0,
+              GUARD_MATE_N=2.0, GUARD_MAT_ON=1.0, BUDGET_ON=1.0, B1_OBV=0.85, B1_SUB=0.55, B1_QUEEN=0.95, B1_MATE=0.9, B1_BLIND=0.5, B2_OBV=0.95, B2_SUB=0.8, B2_QUEEN=0.99, B2_MATE=0.97, B2_BLIND=0.0, GUARD_WC_P=0.0, B1_WC=0.4, B2_WC=0.7),
     # 1400 retuned 2026-10-12 (W46b10m12g) + hanging-piece guard 2026-10-15 (T 5.7, see CALIBRATION.md)
-    1400: dict(T=5.7, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.10, BLIND_TEMPT=10.0, BLIND_MIN_LOSS=12.0, TEACH_BONUS=4.0,
+    # 2026-10-18: per-game blunder budget + material/mate-in-2/win-chance guard; T 5.7->7.5 keeps self-play ACPL (51.1 vs 52.0)
+    1400: dict(T=7.5, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.10, BLIND_TEMPT=10.0, BLIND_MIN_LOSS=12.0, TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=5.0, GUARD_QUEEN_P=0.97, GUARD_MATE1_P=0.85,
-               GUARD_HANG_OBV_P=0.85, GUARD_HANG_SUB_P=0.55, GUARD_HANG_DROP=150.0),
+               GUARD_HANG_OBV_P=0.85, GUARD_HANG_SUB_P=0.55, GUARD_HANG_DROP=150.0,
+              GUARD_MATE_N=2.0, GUARD_MAT_ON=1.0, BUDGET_ON=1.0, B1_OBV=0.93, B1_SUB=0.65, B1_QUEEN=0.99, B1_MATE=0.95, B1_BLIND=0.7, B2_OBV=0.97, B2_SUB=0.8, B2_QUEEN=1.0, B2_MATE=1.0, B2_BLIND=0.4, GUARD_WC_P=0.0, B1_WC=0.6, B2_WC=0.85),
 }
 ELO_CALIBRATED = {1000}   # fully calibrated; 800/1200/1400 are field-test (self-play matched, awaiting human games)
 PRESETS_SOURCE = "built-in"
@@ -919,9 +925,125 @@ def hang_class(board, chosen, top, deep, deep_infos, min_drop=GUARD_HANG_DROP):
     return None
 
 
+GUARD_MAT_LOSS = 3         # material rule: >= a minor piece (pawns) worse than top ...
+GUARD_MAT_MIN_DROP = 40    # ... and raw (unclamped, mate=3000) eval drop >= this when the game is already decided
+GUARD_MAT_DECIDED = 300    # |top raw eval| >= this = decided (evals saturate: a lost rook may cost only ~100cp)
+GUARD_MAT_MIN_DROP_OPEN = 100  # raw drop needed in undecided positions (below this the engine sees compensation)
+RAW_CAP = 3000
+
+
+def _raw_cp(info: dict, us: bool) -> int:
+    v = info["score"].pov(us).score(mate_score=RAW_CAP)
+    return max(-RAW_CAP, min(RAW_CAP, int(v)))
+
+
+def guard_kind(board, chosen, top, deep, raw, deep_infos, mate_of, P):
+    """Classify a candidate for the guard: None | 'queen' | 'mate' | 'obvious' | 'subtle'.
+    cp-drop tests use the clamped deep view; the material rule (GUARD_MAT_ON) is
+    eval-clamp independent, so it still fires in already-lost/won positions."""
+    if chosen == top:
+        return None, ""
+    net_c, net_t = material_net(board, chosen), material_net(board, top)
+    drop = deep[top] - deep[chosen]
+    raw_drop = raw[top] - raw[chosen]
+    mat_on = P.get("GUARD_MAT_ON", 0) >= 0.5
+    if net_t - net_c >= 8 and (max(drop, raw_drop) if mat_on else drop) >= 500:
+        return "queen", "queen for nothing"
+    n_mate = max(1, int(round(P.get("GUARD_MATE_N", 1))))
+    mc, mt = mate_of.get(chosen), mate_of.get(top)
+    if mc is not None and mc < 0 and abs(mc) <= n_mate and not (mt is not None and mt < 0):
+        return "mate", f"allows mate-in-{abs(mc)}"
+    hc = hang_class(board, chosen, top, deep, deep_infos, P.get("GUARD_HANG_DROP", GUARD_HANG_DROP))
+    if hc:
+        return hc, f"hangs material ({hc})"
+    need = GUARD_MAT_MIN_DROP if abs(raw[top]) >= GUARD_MAT_DECIDED else GUARD_MAT_MIN_DROP_OPEN
+    if mat_on and raw_drop >= need:
+        if net_t - net_c >= GUARD_MAT_LOSS:
+            return "obvious", f"hangs material (obvious, material {net_t - net_c}p, raw drop {raw_drop}cp)"
+        pv_c = [chosen] + list(deep_infos[chosen].get("pv") or [])[1:]
+        pv_t = [top] + list(deep_infos[top].get("pv") or [])[1:]
+        sw = _pv_material_swing(board, pv_c, 5) - _pv_material_swing(board, pv_t, 5)
+        if sw >= GUARD_MAT_LOSS:
+            return "subtle", f"hangs material (subtle, PV material {sw}p, raw drop {raw_drop}cp)"
+    return None, ""
+
+
+# ---- per-game blunder budget --------------------------------------------
+# A bot move that reaches the board while flagged (kept guard case, or a
+# Lichess-scale blunder: >= BUDGET_WP_BLUNDER win%-points) is recorded as a
+# (position, SAN) pair. The count for a game = recorded pairs that occur among
+# OUR moves in that game's move list, so it survives worker/loop restarts
+# (pairs persisted per gameId under BUDGET_DIR when the loop sends gameId).
+BUDGET_WP_BLUNDER = 15.0
+BUDGET_DIR = Path(os.environ.get("CHESS_BUDGET_DIR") or (Path(__file__).resolve().parent / ".budget"))
+_BUDGET_MEM: dict[str, set] = {}
+_BUDGET_HINT = {"n": 0}
+
+
+def _budget_set(game_id: str | None) -> set:
+    gid = game_id or "_anon"
+    if gid not in _BUDGET_MEM:
+        st = set()
+        if game_id:
+            try:
+                st = set(json.loads((BUDGET_DIR / (re.sub(r"[^A-Za-z0-9_.-]", "_", gid) + ".json")).read_text()))
+            except Exception:
+                st = set()
+        _BUDGET_MEM[gid] = st
+    return _BUDGET_MEM[gid]
+
+
+def budget_record(game_id: str | None, fen: str, san: str) -> None:
+    st = _budget_set(game_id)
+    st.add(f"{fen_key(fen)}|{san}")
+    if game_id:
+        try:
+            BUDGET_DIR.mkdir(parents=True, exist_ok=True)
+            f = BUDGET_DIR / (re.sub(r"[^A-Za-z0-9_.-]", "_", game_id) + ".json")
+            tmp = f.with_suffix(".tmp")
+            tmp.write_text(json.dumps(sorted(st)))
+            tmp.replace(f)
+        except Exception as e:
+            print(f"budget persist failed: {e}", file=sys.stderr)
+
+
+def budget_count(game_id: str | None, start_fen: str | None, moves: list[str] | None, us: bool) -> int:
+    if not moves:
+        return 0
+    st = _budget_set(game_id)
+    if not st:
+        return 0
+    b = chess.Board(start_fen) if start_fen else chess.Board()
+    n = 0
+    for san in moves:
+        try:
+            if b.turn == us and f"{fen_key(b.fen())}|{san}" in st:
+                n += 1
+            b.push_san(san)
+        except Exception:
+            break
+    return n
+
+
+def apply_budget(P: dict, n: int) -> dict:
+    if n <= 0 or P.get("BUDGET_ON", 0) < 0.5:
+        return P
+    q = dict(P)
+    pre = "B2_" if n >= 2 else "B1_"
+    q["GUARD_HANG_OBV_P"] = max(P.get("GUARD_HANG_OBV_P", 0.0), P.get(pre + "OBV", 0.0))
+    q["GUARD_HANG_SUB_P"] = max(P.get("GUARD_HANG_SUB_P", 0.0), P.get(pre + "SUB", 0.0))
+    q["GUARD_QUEEN_P"] = max(P["GUARD_QUEEN_P"], P.get(pre + "QUEEN", 0.0))
+    q["GUARD_MATE1_P"] = max(P["GUARD_MATE1_P"], P.get(pre + "MATE", 0.0))
+    q["P_BLIND"] = P["P_BLIND"] * P.get(pre + "BLIND", 1.0)
+    q["GUARD_WC_P"] = max(P.get("GUARD_WC_P", 0.0), P.get(pre + "WC", 0.0))
+    q["budget_n"] = n
+    return q
+
+
 def elo_choose(board: chess.Board, elo: int, legal_sans: list[str] | None,
-               hist_keys: list[str] | None = None, moves: list[str] | None = None) -> dict:
-    P = elo_profile(elo)
+               hist_keys: list[str] | None = None, moves: list[str] | None = None,
+               budget_n: int = 0) -> dict:
+    P = apply_budget(elo_profile(elo), budget_n)
     us = board.turn
     we_are_white = us == chess.WHITE
     events: list[str] = []
@@ -1061,36 +1183,53 @@ def elo_choose(board: chess.Board, elo: int, legal_sans: list[str] | None,
 
     pool = list(cands)
     chosen, prob = draw(pool)
-    # Guard (loosened): queen for nothing / allowing mate-in-1.
+    raw = {m: _raw_cp(deep_infos[m], us) for m in legal}
+    if P.get("budget_n"):
+        events.append(f"budget: {P['budget_n']} blunder(s) on board this game -> guard obv/sub/queen/mate "
+                      f"{P['GUARD_HANG_OBV_P']:.2f}/{P['GUARD_HANG_SUB_P']:.2f}/{P['GUARD_QUEEN_P']:.2f}/"
+                      f"{P['GUARD_MATE1_P']:.2f}, winchance {P.get('GUARD_WC_P', 0.0):.2f}, P_BLIND {P['P_BLIND']:.3f}")
+    # Guard: queen for nothing / allowing mate-in-N / hanging material.
+    kept_kind = None
     for _ in range(6):
-        net_loss = material_net(board, top) - material_net(board, chosen)
+        kind, what = guard_kind(board, chosen, top, deep, raw, deep_infos, mate_of, P)
+        if kind is None and P.get("GUARD_WC_P", 0.0) > 0 and chosen != top:
+            # non-material Lichess-scale blunder (>= BUDGET_WP_BLUNDER win%-points
+            # by the deep view): positional/tactical collapse the hang tests miss
+            wdrop = _wp(top_cp) - _wp(deep[chosen])
+            if wdrop >= BUDGET_WP_BLUNDER:
+                kind, what = "winchance", f"drops {wdrop:.0f} win%"
         drop = top_cp - deep[chosen]
-        q = net_loss >= 8 and drop >= 500
-        mate1 = mate_of.get(chosen) is not None and mate_of[chosen] < 0 and abs(mate_of[chosen]) <= 1 \
-            and not (mate_of.get(top) is not None and mate_of[top] < 0)
-        hc = None if (q or mate1) else hang_class(board, chosen, top, deep, deep_infos,
-                                                       P.get("GUARD_HANG_DROP", GUARD_HANG_DROP))
-        p_block = (P["GUARD_QUEEN_P"] if q else P["GUARD_MATE1_P"] if mate1 else
-                   P.get("GUARD_HANG_OBV_P", 0.0) if hc == "obvious" else
-                   P.get("GUARD_HANG_SUB_P", 0.0) if hc == "subtle" else 0.0)
+        p_block = (P["GUARD_QUEEN_P"] if kind == "queen" else P["GUARD_MATE1_P"] if kind == "mate" else
+                   P.get("GUARD_HANG_OBV_P", 0.0) if kind == "obvious" else
+                   P.get("GUARD_HANG_SUB_P", 0.0) if kind == "subtle" else
+                   P.get("GUARD_WC_P", 0.0) if kind == "winchance" else 0.0)
+        if kind is None:
+            break
         if p_block <= 0:
+            kept_kind = kind
             break
         roll = RNG.random()
-        what = "queen for nothing" if q else "allows mate-in-1" if mate1 else f"hangs material ({hc})"
         if roll < p_block and len(pool) > 1:
             events.append(f"guard-redraw: {san[chosen]} {what} (drop {drop}cp; roll {roll:.2f}<{p_block:.2f})")
             pool = [m for m in pool if m != chosen]
             chosen, prob = draw(pool)
         else:
             events.append(f"guard-kept-blunder: {san[chosen]} {what} (roll {roll:.2f}≥{p_block:.2f})")
+            kept_kind = kind
             break
+    blunder = kept_kind
+    if blunder is None and chosen != top and _wp(top_cp) - _wp(deep[chosen]) >= BUDGET_WP_BLUNDER:
+        blunder = "winchance"
 
     source = "teach" if chosen in teach_set else ("best" if chosen == top else "model")
     alts = [san[m] for m in sorted(cands, key=lambda m: perceived[m])]
     events.append(f"elo{elo}: {san[chosen]} p={prob:.2f} deepLoss={Ld[chosen]:.1f} "
                   f"shallowLoss={Ls[chosen]:.1f} ({deep[chosen] - top_cp:+d}cp vs {san[top]}) "
                   f"cands={len(cands)}")
-    return _elo_result(board, chosen, deep, Ld, source, events, alts, P, top=top)
+    res = _elo_result(board, chosen, deep, Ld, source, events, alts, P, top=top)
+    res["blunder"] = blunder
+    res["gate"]["bud"] = int(P.get("budget_n", 0))
+    return res
 
 
 def _elo_result(board, chosen, deep, Ld, source, events, alts, P, top):
@@ -1316,12 +1455,13 @@ def store_cache(ck: str, chosen: dict) -> None:
         "guard": chosen.get("guard"),
         "events": list(chosen.get("events") or []),
         "gate": chosen.get("gate"),
+        "blunder": chosen.get("blunder"),
     }
 
 
 def _public(chosen: dict) -> dict:
     keys = ("san", "alts", "score", "skillBestSan", "primarySan", "fullBestSan",
-            "source", "guard", "gate")
+            "source", "guard", "gate", "blunder")
     out = {k: chosen.get(k) for k in keys}
     out["events"] = list(chosen.get("events") or [])
     return out
@@ -1380,6 +1520,16 @@ def cmd_choose(msg: dict) -> dict:
         we_are_white = board.turn == chess.WHITE
 
     pre_events: list[str] = []
+    game_id = msg.get("gameId")
+    bud = budget_count(game_id, start_fen, moves, board.turn) if mode == "elo" else 0
+    _BUDGET_HINT["n"] = bud
+    if bud:
+        pre_events.append(f"budget-count {bud}")
+    if ck in CACHE and mode == "elo" and CACHE[ck].get("blunder") and \
+            bud > int((CACHE[ck].get("gate") or {}).get("bud", 0)):
+        pre_events.append(f"cache-reject: cached {CACHE[ck]['san']} was a {CACHE[ck]['blunder']} drawn at budget "
+                          f"{(CACHE[ck].get('gate') or {}).get('bud', 0)} < {bud}")
+        del CACHE[ck]
     if ck in CACHE:
         entry = dict(CACHE[ck])
         try:
@@ -1397,12 +1547,13 @@ def cmd_choose(msg: dict) -> dict:
                         out["score"] = _white_cp(fe, mv)
                     except Exception:
                         pass
-                out["events"] = [*out["events"], f"cache {why}"]
+                out["events"] = [*pre_events, *out["events"], f"cache {why}"]
                 if mode == "skill":
                     out = apply_threefold_policy(board, out, hist, we_are_white)
                 out = won_safeguard(board, out, hist, moves)
                 out["cached"] = True
                 out["mode"] = mode
+                _budget_after(game_id, fen, out, entry, bud)
                 return out
             pre_events.append(f"cache-reject: {why}")
         else:
@@ -1411,12 +1562,12 @@ def cmd_choose(msg: dict) -> dict:
 
     if mode == "elo":
         try:
-            chosen = elo_choose(board, level, legal, hist, moves)
+            chosen = elo_choose(board, level, legal, hist, moves, budget_n=bud)
         except Exception as e:  # engine stall/timeout: respawn engines, retry once, then judge top
             pre_events.append(f"elo_choose error {type(e).__name__}: {e}; respawning engines")
             reset_engines()
             try:
-                chosen = elo_choose(board, level, legal, hist, moves)
+                chosen = elo_choose(board, level, legal, hist, moves, budget_n=bud)
             except Exception as e2:
                 reset_engines()
                 fe = full_eval(board, 0.3, 1)
@@ -1434,7 +1585,21 @@ def cmd_choose(msg: dict) -> dict:
         out = apply_threefold_policy(board, out, hist, we_are_white)
     out = won_safeguard(board, out, hist, moves)
     out["mode"] = mode
+    if mode == "elo":
+        _budget_after(game_id, fen, out, chosen, bud)
     return out
+
+
+def _budget_after(game_id, fen, out, chosen, bud) -> None:
+    """Record a flagged move that is actually being played; bump the ponder hint."""
+    b = chosen.get("blunder")
+    if b and out.get("san") == chosen.get("san"):
+        budget_record(game_id, fen, out["san"])
+        out["events"] = [*out.get("events", []), f"budget-record: {out['san']} ({b}) -> {bud + 1} this game"]
+        _BUDGET_HINT["n"] = bud + 1
+        out["blunder"] = b
+    else:
+        out["blunder"] = None
 
 
 def cmd_ponder(msg: dict) -> dict:
@@ -1460,7 +1625,7 @@ def cmd_ponder(msg: dict) -> dict:
             continue
         if child.is_game_over():
             continue
-        reply = elo_choose(child, level, None) if mode == "elo" else analyse_choose(child, level, None)
+        reply = elo_choose(child, level, None, budget_n=_BUDGET_HINT["n"]) if mode == "elo" else analyse_choose(child, level, None)
         ck = f"{fen_key(child.fen())}|{pkey}"
         store_cache(ck, reply)
         stored.append({

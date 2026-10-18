@@ -43,9 +43,25 @@
         "TEACH_MAX_LOSS": 6.0,
         "GUARD_QUEEN_P": 0.85,
         "GUARD_MATE1_P": 0.6,
-        "GUARD_HANG_OBV_P": 0,
-        "GUARD_HANG_SUB_P": 0,
-        "GUARD_HANG_DROP": 250.0
+        "GUARD_HANG_OBV_P": 0.0,
+        "GUARD_HANG_SUB_P": 0.0,
+        "GUARD_HANG_DROP": 250.0,
+        "GUARD_MATE_N": 1.0,
+        "GUARD_MAT_ON": 0.0,
+        "BUDGET_ON": 0.0,
+        "B1_OBV": 0.0,
+        "B1_SUB": 0.0,
+        "B1_QUEEN": 0.0,
+        "B1_MATE": 0.0,
+        "B1_BLIND": 1.0,
+        "B2_OBV": 0.0,
+        "B2_SUB": 0.0,
+        "B2_QUEEN": 0.0,
+        "B2_MATE": 0.0,
+        "B2_BLIND": 1.0,
+        "GUARD_WC_P": 0.0,
+        "B1_WC": 0.0,
+        "B2_WC": 0.0
       },
       "note": "Accuracy reads high in self-play; blunder rate on target. Targets below 800 clamp to this anchor."
     },
@@ -89,9 +105,25 @@
         "TEACH_MAX_LOSS": 6.0,
         "GUARD_QUEEN_P": 0.85,
         "GUARD_MATE1_P": 0.6,
-        "GUARD_HANG_OBV_P": 0,
-        "GUARD_HANG_SUB_P": 0,
-        "GUARD_HANG_DROP": 250.0
+        "GUARD_HANG_OBV_P": 0.0,
+        "GUARD_HANG_SUB_P": 0.0,
+        "GUARD_HANG_DROP": 250.0,
+        "GUARD_MATE_N": 1.0,
+        "GUARD_MAT_ON": 0.0,
+        "BUDGET_ON": 0.0,
+        "B1_OBV": 0.0,
+        "B1_SUB": 0.0,
+        "B1_QUEEN": 0.0,
+        "B1_MATE": 0.0,
+        "B1_BLIND": 1.0,
+        "B2_OBV": 0.0,
+        "B2_SUB": 0.0,
+        "B2_QUEEN": 0.0,
+        "B2_MATE": 0.0,
+        "B2_BLIND": 1.0,
+        "GUARD_WC_P": 0.0,
+        "B1_WC": 0.0,
+        "B2_WC": 0.0
       },
       "status": "calibrated"
     },
@@ -138,34 +170,47 @@
         "GUARD_MATE1_P": 0.65,
         "GUARD_HANG_OBV_P": 0.55,
         "GUARD_HANG_SUB_P": 0.3,
-        "GUARD_HANG_DROP": 200.0
+        "GUARD_HANG_DROP": 200.0,
+        "GUARD_MATE_N": 2.0,
+        "GUARD_MAT_ON": 1.0,
+        "BUDGET_ON": 1.0,
+        "B1_OBV": 0.85,
+        "B1_SUB": 0.55,
+        "B1_QUEEN": 0.95,
+        "B1_MATE": 0.9,
+        "B1_BLIND": 0.5,
+        "B2_OBV": 0.95,
+        "B2_SUB": 0.8,
+        "B2_QUEEN": 0.99,
+        "B2_MATE": 0.97,
+        "B2_BLIND": 0.0,
+        "GUARD_WC_P": 0.0,
+        "B1_WC": 0.4,
+        "B2_WC": 0.7
       },
       "note": "Accuracy reads high in self-play and inaccuracy/mistake/blunder rates are under target; may play slightly stronger than the band in practice. Hanging guard .55/.30 (drop 200) added 2026-10-15 without re-calibration."
     },
     "1400": {
       "status": "field-test",
       "calibrated": false,
-      "calibratedOn": "2026-10-15",
-      "method": "self-play batches H6+H7+C1+C2 (T 5.6-5.8, 36 games), scored by Stockfish depth 18; hanging-piece guard added after the retuned preset showed ~9 practical blunders/100 live; field-test",
+      "calibratedOn": "2026-10-18",
+      "method": "self-play batches BF900-BF1600 (48 games, 1400 vs itself, ponder off), scored by Stockfish depth 18; per-game blunder budget + clamp-independent material rule + mate-in-2 guard + win-chance guard (2026-10-18), T raised 5.7->7.5 to keep ACPL at the previous level; field-test",
       "measured": {
-        "acpl": 53.3,
-        "acpl90ci": [
-          51.3,
-          55.5
-        ],
-        "accuracy": 85.1,
+        "acpl": 51.1,
         "per100": {
-          "inaccuracies": 13.2,
-          "mistakes": 4.67,
-          "blunders": 3.86
+          "inaccuracies": 12.68,
+          "mistakes": 5.68,
+          "blunders": 3.41
         },
-        "practicalBlundersPer100": 5.15,
+        "practicalBlundersPer100": 4.46,
         "practical90ci": [
-          4.6,
-          5.73
+          4.03,
+          4.92
         ],
-        "moves": 4173,
-        "scoreDepth": 18
+        "moves": 5655,
+        "scoreDepth": 18,
+        "note": "ACPL is the move-weighted mean of eight 6-game chunks (chunk CIs in CALIBRATION.md); accuracy not pooled",
+        "accuracyMeanOfChunks": 85.6
       },
       "target": {
         "source": "Lichess 2025-09 rated Rapid+Classical, 1400 band",
@@ -178,7 +223,7 @@
         }
       },
       "knobs": {
-        "T": 5.7,
+        "T": 7.5,
         "ALPHA": 0.5,
         "KAPPA": 3.0,
         "K": 6,
@@ -191,9 +236,25 @@
         "GUARD_MATE1_P": 0.85,
         "GUARD_HANG_OBV_P": 0.85,
         "GUARD_HANG_SUB_P": 0.55,
-        "GUARD_HANG_DROP": 150.0
+        "GUARD_HANG_DROP": 150.0,
+        "GUARD_MATE_N": 2.0,
+        "GUARD_MAT_ON": 1.0,
+        "BUDGET_ON": 1.0,
+        "B1_OBV": 0.93,
+        "B1_SUB": 0.65,
+        "B1_QUEEN": 0.99,
+        "B1_MATE": 0.95,
+        "B1_BLIND": 0.7,
+        "B2_OBV": 0.97,
+        "B2_SUB": 0.8,
+        "B2_QUEEN": 1.0,
+        "B2_MATE": 1.0,
+        "B2_BLIND": 0.4,
+        "GUARD_WC_P": 0.0,
+        "B1_WC": 0.6,
+        "B2_WC": 0.85
       },
-      "note": "Practical blunders = metric blunders + clamp-hidden material losses (tools/calibration/practical.py). Live play has run about 1.6-1.9x self-play blunder rates; validate in human games. ACPL reads slightly strong (53 vs 60).",
+      "note": "Practical blunders = metric blunders + clamp-hidden material losses (tools/calibration/practical.py). Budget/material/win-chance guard cut self-play practical blunders 5.14 -> 4.46/100 at equal ACPL (51.1 vs 52.0). Live play has run above self-play blunder rates (live bot pool 6.53/100 before this change); validate in human games. ACPL reads slightly strong (51 vs 60).",
       "previous": {
         "date": "2026-10-10",
         "knobs": {
@@ -231,7 +292,50 @@
             6.67
           ]
         }
+      },
+      "previous_2026_10_15": {
+        "date": "2026-10-15",
+        "knobs": {
+          "T": 5.7,
+          "GUARD_MATE_N": 1.0,
+          "GUARD_MAT_ON": 0.0,
+          "BUDGET_ON": 0.0,
+          "GUARD_WC_P": 0.0
+        },
+        "selfplay_d18_same_seeds": {
+          "games": 30,
+          "moves": 3696,
+          "acpl": 52.0,
+          "per100": [
+            11.99,
+            4.82,
+            3.95
+          ],
+          "practicalBlundersPer100": 5.14,
+          "practical90ci": [
+            4.57,
+            5.74
+          ]
+        },
+        "selfplay_d18_family_pool": {
+          "acpl": 53.3,
+          "acpl90ci": [
+            51.3,
+            55.5
+          ],
+          "practicalBlundersPer100": 5.15,
+          "moves": 4173
+        }
       }
     }
+  },
+  "knobDocs": {
+    "GUARD_MATE_N": "guard re-draws a move that allows mate-in-<=N (prob GUARD_MATE1_P) when the best move doesn't; 1 = old behaviour",
+    "GUARD_MAT_ON": ">=0.5 enables the eval-clamp-independent material rule: candidate is a hang if its SEE net or 5-ply PV material is >=3 pawns worse than the top move's and the raw (unclamped, mate=3000) eval drop is >=40cp in decided positions (|raw top| >= 300cp) or >=100cp otherwise (worker constants GUARD_MAT_LOSS/GUARD_MAT_MIN_DROP/GUARD_MAT_DECIDED/GUARD_MAT_MIN_DROP_OPEN)",
+    "BUDGET_ON": ">=0.5 enables the per-game blunder budget",
+    "B1_*": "after 1 bot blunder on the board this game: guard probs raised to at least B1_OBV/B1_SUB/B1_QUEEN/B1_MATE/B1_WC; P_BLIND multiplied by B1_BLIND",
+    "B2_*": "after 2+ blunders: same with B2_*",
+    "GUARD_WC_P": "probability the guard re-draws a non-material Lichess-scale blunder (deep win-chance drop >= 15 points vs the top move) that no hang/mate/queen test flagged; 0 = off",
+    "budget": "a bot move counts toward the budget when it reaches the board flagged (guard kept it) or loses >= 15 win% (deep view). Pairs (position, SAN) are persisted per gameId (loop sends room:gameNumber) under CHESS_BUDGET_DIR or <worker dir>/.budget, so worker/loop restarts keep the count"
   }
 }

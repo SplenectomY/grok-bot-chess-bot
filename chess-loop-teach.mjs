@@ -383,6 +383,7 @@ class SfWorker {
       weAreWhite,
       moves,
       startFen: st.startFen || undefined,
+      gameId: `${room}:${st.game ?? st.gameNumber ?? 1}`, // per-game blunder budget (worker persists it)
     });
     if (!r?.ok) throw new Error(r?.error || "choose failed");
     return r;
