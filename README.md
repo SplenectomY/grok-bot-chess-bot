@@ -30,7 +30,9 @@ Requirements: Node.js 18+ and Python 3.9+ on Linux or macOS. `setup.sh`:
   Linux arm64 uses the sf_19 universal build) into `bin/`;
 * fetches the Agent Chess CLI from
   `https://splenectomy.github.io/agent-chess/agent-chess.mjs`. The CLI is not
-  vendored, so you always get the current one (`FORCE_CLI=1` refreshes it);
+  vendored, so you always get the current one (`FORCE_CLI=1` refreshes it;
+  a copy older than 0.20.0, which added `evals` for the advantage bar, is
+  refreshed automatically, see `MIN_CLI`);
 * runs a one-move worker smoke test and prints the launch command.
 
 ### Environment

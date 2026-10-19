@@ -6,7 +6,7 @@
 #   - fetches the Agent Chess CLI (agent-chess.mjs; not vendored)
 # Env: CHESS_HOME (default: this repo dir), STOCKFISH_BIN (use an existing engine),
 #      STOCKFISH_TAG (default sf_17, the version the presets were calibrated with),
-#      FORCE_CLI=1 (re-download agent-chess.mjs)
+#      FORCE_CLI=1 (re-download agent-chess.mjs), MIN_CLI (default 0.20.0: older copies are refreshed)
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")" && pwd)"
 CHESS_HOME="${CHESS_HOME:-$REPO}"
@@ -72,11 +72,18 @@ SF_VER="$(echo quit | "$SF" 2>/dev/null | head -1)"
 case "$SF_VER" in Stockfish*) say "engine: $SF ($SF_VER)";; *) die "Stockfish at $SF does not run";; esac
 
 # 4. Agent Chess CLI (fetched, not vendored)
+MIN_CLI="${MIN_CLI:-0.20.0}"   # 0.20.0 adds `evals` (advantage bar) and per-note "eval"
+cli_ver() { { sed -n 's/^var VERSION = "\([0-9.]*\)".*/\1/p' "$1" 2>/dev/null | head -1; } || true; }
+CUR_CLI="$(cli_ver "$CHESS_HOME/agent-chess.mjs")"
+if [ -n "$CUR_CLI" ] && [ "$(printf '%s\n%s\n' "$MIN_CLI" "$CUR_CLI" | sort -V | head -1)" != "$MIN_CLI" ]; then
+  say "agent-chess.mjs $CUR_CLI is older than $MIN_CLI; refreshing"; FORCE_CLI=1
+fi
 if [ ! -s "$CHESS_HOME/agent-chess.mjs" ] || [ "${FORCE_CLI:-0}" = 1 ]; then
   say "fetching $CLI_URL"
   fetch "$CLI_URL" "$CHESS_HOME/agent-chess.mjs.tmp" && mv "$CHESS_HOME/agent-chess.mjs.tmp" "$CHESS_HOME/agent-chess.mjs"
 fi
 node --check "$CHESS_HOME/agent-chess.mjs" || die "agent-chess.mjs failed node --check"
+say "agent-chess CLI $(cli_ver "$CHESS_HOME/agent-chess.mjs")"
 
 # 5. quick worker check
 printf '%s\n' '{"cmd":"choose","fen":"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1","elo":1000,"weAreWhite":true,"moves":[]}' '{"cmd":"quit"}' \
