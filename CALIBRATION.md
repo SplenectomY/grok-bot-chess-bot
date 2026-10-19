@@ -258,6 +258,60 @@ Lichess 1400 band (51 vs 60.2), as before.
 a restage with this worker, `presets/elo-profiles.json` and `chess-loop-teach.mjs`
 (gameId in the choose message).
 
+### Won-position conversion: mate / bare-king / progress rule (2026-10-19)
+
+Problem: in live game PQ6DDF (1400, 15+10) the bot reached K+R vs K after 80...Kxa2 and shuffled for
+~20 moves (halfmove clock 33) before a live hotfix made it mate. Once a position is won, win-chance
+losses are flat, so the model sampler and the guards had no reason to make progress. The depth-12
+MultiPV view is also flat in KRK, and ties broke by SAN, which caused cycles.
+
+Rules, checked in `elo_choose` right after `won = top_cp >= WIN_CP` (300). Ponder calls `elo_choose`,
+so it uses the same rules.
+1. **Mate in N or fewer:** if the deep search sees a mate in `CONVERT_MATE_N` moves or fewer, the
+   shortest mate is played (source `convert-mate`).
+2. **Bare king:** this applies when the defender has only K, or K plus pawns, and either we have at
+   least a rook's worth of N/B/R/Q or top >= 800cp. If the MultiPV sees mates, the shortest is played.
+   With probability `CONVERT_SLACK`, the bot instead plays a non-repeating mate up to 2 moves slower.
+   If the MultiPV sees no mate, a focused single-PV search runs (depth 24 / 1.0s; root moves that
+   repeat a position are excluded) and its move is played (`convert-mate` if it sees a mate,
+   `convert-top` if not).
+3. **Progress:** while still won and the halfmove clock is >= `CONVERT_HMC` (20), the focused-search
+   move is played. This stops won endings from drifting toward the fifty-move rule, while normal won
+   middlegames keep their 1400-like imperfection.
+4. **Cache re-gate:** `regate_cached_elo` rejects a cached non-convert move that is not top when rule
+   2 or 3 applies.
+
+The PQ6DDF hotfix's "<=6 men -> engine top" rule was dropped. It would have made the bot play
+perfectly in merely +3 R+P vs R endings.
+
+| knob | 800 | 1000 | 1200 | 1400 |
+|---|---|---|---|---|
+| CONVERT_MATE_N | 0 | 0 | 1 | 2 |
+| CONVERT_SLACK | 0.30 | 0.25 | 0.10 | 0.00 |
+| CONVERT_HMC | 20 | 20 | 20 | 20 |
+
+**Endgame regression** (random won starts checked at SF depth 16; defender is SF depth 12; pass =
+mate within 50 bot moves). Results are max bot moves to mate.
+- 1400 with ponder: KRK 20/20 (max 19), KQK 20/20 (8), KRPK 20/20 (14), KQKP 20/20 (13), KBBK 8/8 (16).
+- 1200: KRK 20/20 (21), KQK 20/20 (10), KRPK 20/20 (16), KQKP 20/20 (16).
+- 1000: KRK 10/10 (19), KQK 10/10 (13), KRPK 6/6 (12).
+- 800: KRK 10/10 (25), KQK 10/10 (13).
+- Total: 214/214.
+- An earlier version that used only the MultiPV top failed 7 of these starts (threefolds, one lost
+  rook, one over 50 moves). All 7 now mate at 800/1000/1200/1400 (worst case 36 moves, at 800).
+- regress / regress2 / e2e: all pass.
+
+**Middlegame check, 1400 self-play** (same seeds 900-1600, 48 games, 160-ply cap, scored at depth 18):
+- New: ACPL 53.4, I/M/B per 100 12.16/5.68/3.83, practical 257/5401 = 4.76 (4.30-5.26).
+- Shipped dc46f08: ACPL 51.1, I/M/B 12.68/5.68/3.41, practical 4.46 (4.03-4.92).
+- The confidence intervals overlap. Games diverge from the same seeds because of time-limited searches.
+- About 130 convert-sourced records across the 48 games, mostly mate finishes. Ply-cap games fell from 13 to 7.
+
+**1000 check:** 6 games, ACPL 73.6 (65.5-83.0), practical 10.06, against the previous check's
+74.1 / 10.46. No material change.
+
+The market template still needs restaging; this change has not been restaged there.
+
 ## 4. Calibrating a new level (e.g. 1200)
 
 1. Pick the target row from `calib_table.txt`.

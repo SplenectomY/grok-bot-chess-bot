@@ -61,7 +61,10 @@
         "B2_BLIND": 1.0,
         "GUARD_WC_P": 0.0,
         "B1_WC": 0.0,
-        "B2_WC": 0.0
+        "B2_WC": 0.0,
+        "CONVERT_MATE_N": 0.0,
+        "CONVERT_SLACK": 0.3,
+        "CONVERT_HMC": 20.0
       },
       "note": "Accuracy reads high in self-play; blunder rate on target. Targets below 800 clamp to this anchor."
     },
@@ -123,7 +126,10 @@
         "B2_BLIND": 1.0,
         "GUARD_WC_P": 0.0,
         "B1_WC": 0.0,
-        "B2_WC": 0.0
+        "B2_WC": 0.0,
+        "CONVERT_MATE_N": 0.0,
+        "CONVERT_SLACK": 0.25,
+        "CONVERT_HMC": 20.0
       },
       "status": "calibrated"
     },
@@ -186,7 +192,10 @@
         "B2_BLIND": 0.0,
         "GUARD_WC_P": 0.0,
         "B1_WC": 0.4,
-        "B2_WC": 0.7
+        "B2_WC": 0.7,
+        "CONVERT_MATE_N": 1.0,
+        "CONVERT_SLACK": 0.1,
+        "CONVERT_HMC": 20.0
       },
       "note": "Accuracy reads high in self-play and inaccuracy/mistake/blunder rates are under target; may play slightly stronger than the band in practice. Hanging guard .55/.30 (drop 200) added 2026-10-15 without re-calibration."
     },
@@ -252,7 +261,10 @@
         "B2_BLIND": 0.4,
         "GUARD_WC_P": 0.0,
         "B1_WC": 0.6,
-        "B2_WC": 0.85
+        "B2_WC": 0.85,
+        "CONVERT_MATE_N": 2.0,
+        "CONVERT_SLACK": 0.0,
+        "CONVERT_HMC": 20.0
       },
       "note": "Practical blunders = metric blunders + clamp-hidden material losses (tools/calibration/practical.py). Budget/material/win-chance guard cut self-play practical blunders 5.14 -> 4.46/100 at equal ACPL (51.1 vs 52.0). Live play has run above self-play blunder rates (live bot pool 6.53/100 before this change); validate in human games. ACPL reads slightly strong (51 vs 60).",
       "previous": {
@@ -336,6 +348,10 @@
     "B1_*": "after 1 bot blunder on the board this game: guard probs raised to at least B1_OBV/B1_SUB/B1_QUEEN/B1_MATE/B1_WC; P_BLIND multiplied by B1_BLIND",
     "B2_*": "after 2+ blunders: same with B2_*",
     "GUARD_WC_P": "probability the guard re-draws a non-material Lichess-scale blunder (deep win-chance drop >= 15 points vs the top move) that no hang/mate/queen test flagged; 0 = off",
-    "budget": "a bot move counts toward the budget when it reaches the board flagged (guard kept it) or loses >= 15 win% (deep view). Pairs (position, SAN) are persisted per gameId (loop sends room:gameNumber) under CHESS_BUDGET_DIR or <worker dir>/.budget, so worker/loop restarts keep the count"
+    "budget": "a bot move counts toward the budget when it reaches the board flagged (guard kept it) or loses >= 15 win% (deep view). Pairs (position, SAN) are persisted per gameId (loop sends room:gameNumber) under CHESS_BUDGET_DIR or <worker dir>/.budget, so worker/loop restarts keep the count",
+    "CONVERT_MATE_N": "in a won position (top >= 300cp) a mate-in-<=N seen by the deep search is always played (shortest); 0 = only via the bare-king rule",
+    "CONVERT_SLACK": "bare-king conversion only: probability of playing a slightly slower mate (within +2 moves of the shortest, non-repeating) instead of the shortest; keeps low levels a bit human while still mating well inside 50 moves",
+    "CONVERT_HMC": "progress rule: when still won and the halfmove clock is >= this, play the focused-search engine move (no sampler) so won endings can't drift into the fifty-move rule",
+    "conversion": "bare-king rule: defender has only K(+pawns) and we have >= a rook's worth of pieces or top >= 800cp -> shortest mate if the deep MultiPV sees one, else a focused single-PV search (depth 24 / 1.0s, repeating moves excluded). The cache re-gate rejects a cached non-convert move when a rule applies, and ponder uses the same elo_choose path."
   }
 }

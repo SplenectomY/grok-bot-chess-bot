@@ -755,23 +755,23 @@ ELO_PROFILES: dict[int, dict] = {
     800: dict(T=5.8, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.40, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
               TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6,
               GUARD_HANG_OBV_P=0.0, GUARD_HANG_SUB_P=0.0, GUARD_HANG_DROP=250.0,
-              GUARD_MATE_N=1.0, GUARD_MAT_ON=0.0, BUDGET_ON=0.0, B1_OBV=0.0, B1_SUB=0.0, B1_QUEEN=0.0, B1_MATE=0.0, B1_BLIND=1.0, B2_OBV=0.0, B2_SUB=0.0, B2_QUEEN=0.0, B2_MATE=0.0, B2_BLIND=1.0, GUARD_WC_P=0.0, B1_WC=0.0, B2_WC=0.0),
+              GUARD_MATE_N=1.0, GUARD_MAT_ON=0.0, BUDGET_ON=0.0, B1_OBV=0.0, B1_SUB=0.0, B1_QUEEN=0.0, B1_MATE=0.0, B1_BLIND=1.0, B2_OBV=0.0, B2_SUB=0.0, B2_QUEEN=0.0, B2_MATE=0.0, B2_BLIND=1.0, GUARD_WC_P=0.0, B1_WC=0.0, B2_WC=0.0, CONVERT_MATE_N=0.0, CONVERT_SLACK=0.3, CONVERT_HMC=20.0),
     # CALIBRATED 2026-10-09 by self-play, see CALIBRATION.md
     1000: dict(T=5.2, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.36, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6,
                GUARD_HANG_OBV_P=0.0, GUARD_HANG_SUB_P=0.0, GUARD_HANG_DROP=250.0,
-              GUARD_MATE_N=1.0, GUARD_MAT_ON=0.0, BUDGET_ON=0.0, B1_OBV=0.0, B1_SUB=0.0, B1_QUEEN=0.0, B1_MATE=0.0, B1_BLIND=1.0, B2_OBV=0.0, B2_SUB=0.0, B2_QUEEN=0.0, B2_MATE=0.0, B2_BLIND=1.0, GUARD_WC_P=0.0, B1_WC=0.0, B2_WC=0.0),
+              GUARD_MATE_N=1.0, GUARD_MAT_ON=0.0, BUDGET_ON=0.0, B1_OBV=0.0, B1_SUB=0.0, B1_QUEEN=0.0, B1_MATE=0.0, B1_BLIND=1.0, B2_OBV=0.0, B2_SUB=0.0, B2_QUEEN=0.0, B2_MATE=0.0, B2_BLIND=1.0, GUARD_WC_P=0.0, B1_WC=0.0, B2_WC=0.0, CONVERT_MATE_N=0.0, CONVERT_SLACK=0.25, CONVERT_HMC=20.0),
     # FIELD-TEST 2026-10-10: self-play calibrated vs Lichess Rapid/Classical (see CALIBRATION.md)
     1200: dict(T=4.6, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.24, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=5.5, GUARD_QUEEN_P=0.875, GUARD_MATE1_P=0.65,
                GUARD_HANG_OBV_P=0.55, GUARD_HANG_SUB_P=0.3, GUARD_HANG_DROP=200.0,
-              GUARD_MATE_N=2.0, GUARD_MAT_ON=1.0, BUDGET_ON=1.0, B1_OBV=0.85, B1_SUB=0.55, B1_QUEEN=0.95, B1_MATE=0.9, B1_BLIND=0.5, B2_OBV=0.95, B2_SUB=0.8, B2_QUEEN=0.99, B2_MATE=0.97, B2_BLIND=0.0, GUARD_WC_P=0.0, B1_WC=0.4, B2_WC=0.7),
+              GUARD_MATE_N=2.0, GUARD_MAT_ON=1.0, BUDGET_ON=1.0, B1_OBV=0.85, B1_SUB=0.55, B1_QUEEN=0.95, B1_MATE=0.9, B1_BLIND=0.5, B2_OBV=0.95, B2_SUB=0.8, B2_QUEEN=0.99, B2_MATE=0.97, B2_BLIND=0.0, GUARD_WC_P=0.0, B1_WC=0.4, B2_WC=0.7, CONVERT_MATE_N=1.0, CONVERT_SLACK=0.1, CONVERT_HMC=20.0),
     # 1400 retuned 2026-10-12 (W46b10m12g) + hanging-piece guard 2026-10-15 (T 5.7, see CALIBRATION.md)
     # 2026-10-18: per-game blunder budget + material/mate-in-2/win-chance guard; T 5.7->7.5 keeps self-play ACPL (51.1 vs 52.0)
     1400: dict(T=7.5, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.10, BLIND_TEMPT=10.0, BLIND_MIN_LOSS=12.0, TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=5.0, GUARD_QUEEN_P=0.97, GUARD_MATE1_P=0.85,
                GUARD_HANG_OBV_P=0.85, GUARD_HANG_SUB_P=0.55, GUARD_HANG_DROP=150.0,
-              GUARD_MATE_N=2.0, GUARD_MAT_ON=1.0, BUDGET_ON=1.0, B1_OBV=0.93, B1_SUB=0.65, B1_QUEEN=0.99, B1_MATE=0.95, B1_BLIND=0.7, B2_OBV=0.97, B2_SUB=0.8, B2_QUEEN=1.0, B2_MATE=1.0, B2_BLIND=0.4, GUARD_WC_P=0.0, B1_WC=0.6, B2_WC=0.85),
+              GUARD_MATE_N=2.0, GUARD_MAT_ON=1.0, BUDGET_ON=1.0, B1_OBV=0.93, B1_SUB=0.65, B1_QUEEN=0.99, B1_MATE=0.95, B1_BLIND=0.7, B2_OBV=0.97, B2_SUB=0.8, B2_QUEEN=1.0, B2_MATE=1.0, B2_BLIND=0.4, GUARD_WC_P=0.0, B1_WC=0.6, B2_WC=0.85, CONVERT_MATE_N=2.0, CONVERT_SLACK=0.0, CONVERT_HMC=20.0),
 }
 ELO_CALIBRATED = {1000}   # fully calibrated; 800/1200/1400 are field-test (self-play matched, awaiting human games)
 PRESETS_SOURCE = "built-in"
@@ -1040,6 +1040,75 @@ def apply_budget(P: dict, n: int) -> dict:
     return q
 
 
+CONVERT_TOP_CP = 800        # rule 2 threshold (clamped deep cp, our POV)
+CONVERT_DEPTH = 24          # focused conversion search (single PV)
+CONVERT_TIME = 1.0
+
+
+def bare_defender(board: chess.Board, them: bool) -> bool:
+    """Defender has only king (+ pawns)."""
+    return not any(board.pieces(pt, them) for pt in (chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN))
+
+
+def convert_applies(board: chess.Board, top_cp: int, P: dict) -> str | None:
+    """Rule 2/3 trigger without mate info (used by the cache re-gate too). 'bare': defender has
+    only K(+P) and we have >= a rook's worth of pieces (R, Q, two minors) or top >= CONVERT_TOP_CP."""
+    if top_cp < WIN_CP:
+        return None
+    if bare_defender(board, not board.turn):
+        us = board.turn
+        ours = sum(v * len(board.pieces(pt, us)) for pt, v in ((chess.KNIGHT, 3), (chess.BISHOP, 3), (chess.ROOK, 5), (chess.QUEEN, 9)))
+        if ours >= 5 or top_cp >= P.get("CONVERT_TOP_CP", CONVERT_TOP_CP):
+            return "bare"
+    if board.halfmove_clock >= P.get("CONVERT_HMC", 20):
+        return "progress"
+    return None
+
+
+def convert_pick(board, legal, deep, mate_of, top, top_cp, P, hist_keys, san):
+    mates = sorted((m for m in legal if mate_of.get(m) is not None and mate_of[m] > 0),
+                   key=lambda x: (mate_of[x], san[x]))
+    n_mate = int(round(P.get("CONVERT_MATE_N", 0)))
+    if mates and mate_of[mates[0]] <= n_mate:
+        return mates[0], "convert-mate", f"mate in {mate_of[mates[0]]}"
+    kind = convert_applies(board, top_cp, P)
+    if kind is None:
+        return None
+
+    def repeats(m):
+        if not hist_keys:
+            return False
+        board.push(m)
+        k = fen_key(board.fen())
+        board.pop()
+        return k in hist_keys
+    slack = P.get("CONVERT_SLACK", 0.0) if kind == "bare" else 0.0
+    if mates:
+        best = mates[0]
+        if slack > 0 and RNG.random() < slack:
+            pool = [m for m in mates if mate_of[m] <= mate_of[best] + 2 and not repeats(m)]
+            if pool:
+                m = RNG.choice(pool)
+                return m, "convert-mate", f"{kind}: mate in {mate_of[m]} (slack; shortest {mate_of[best]})"
+        return best, "convert-mate", f"{kind}: mate in {mate_of[best]}"
+    # No mate in the MultiPV view: a focused single-PV search (the MultiPV
+    # depth-12 view is flat in K+R vs K and ties broke by SAN -> shuffles).
+    roots = [m for m in legal if not repeats(m)] or list(legal)
+    try:
+        info = ensure_full_engine().analyse(board, chess.engine.Limit(depth=CONVERT_DEPTH, time=CONVERT_TIME),
+                                            root_moves=roots)
+        m = info["pv"][0]
+        mt = info["score"].pov(board.turn).mate()
+    except Exception:
+        m, mt = top, None
+    if m not in san:
+        m, mt = top, None
+    tag = f"mate in {mt}" if mt and mt > 0 else "engine top"
+    return m, ("convert-mate" if mt and mt > 0 else "convert-top"), (
+        f"{kind}: focused search -> {tag}" if kind == "bare"
+        else f"progress rule (halfmove clock {board.halfmove_clock}) -> {tag}")
+
+
 def elo_choose(board: chess.Board, elo: int, legal_sans: list[str] | None,
                hist_keys: list[str] | None = None, moves: list[str] | None = None,
                budget_n: int = 0) -> dict:
@@ -1073,6 +1142,24 @@ def elo_choose(board: chess.Board, elo: int, legal_sans: list[str] | None,
     top = min(legal, key=lambda m: (Ld[m], san[m]))
     top_cp = deep[top]
     won = top_cp >= WIN_CP
+
+    # Conversion (won positions). Win-chance losses go flat once clearly won, so
+    # the sampler can wander (PQ6DDF: 16 moves of K+R vs K shuffling). Rules, in order:
+    #  1. a mate-in-<=CONVERT_MATE_N is always played (shortest);
+    #  2. bare-king / pawns-only defender and top >= CONVERT_TOP_CP: play the
+    #     shortest mate if the deep search sees one, else the engine top; with
+    #     prob CONVERT_SLACK a slower but still-winning move (non-repeating);
+    #  3. progress rule: still won but halfmove clock >= CONVERT_HMC -> top/mate.
+    # Normal won middlegames otherwise keep the human-like sampler.
+    if won:
+        conv = convert_pick(board, legal, deep, mate_of, top, top_cp, P, hist_keys, san)
+        if conv is not None:
+            m, src, why = conv
+            events.append(f"convert: {why}")
+            res = _elo_result(board, m, deep, Ld, src, events, [san[m]], P, top=top)
+            res["blunder"] = None
+            res["gate"]["bud"] = int(P.get("budget_n", 0))
+            return res
 
     # Candidate set
     by_d = sorted(legal, key=lambda m: Ld[m])
@@ -1496,6 +1583,9 @@ def regate_cached_elo(board: chess.Board, entry: dict) -> tuple[bool, str, FullE
     if mv not in fe.cp:
         return False, "no judge eval for cached move", fe
     drop_now = fe.top_cp - fe.cp[mv]
+    conv = convert_applies(board, fe.top_cp, elo_profile(int(entry.get("elo") or (entry.get("gate") or {}).get("elo") or ELO_DEFAULT)))
+    if conv and not str(entry.get("source", "")).startswith("convert") and mv != fe.top:
+        return False, f"conversion ({conv}): cached {entry['san']} is not top {board.san(fe.top)}", fe
     g = entry.get("gate") or {}
     drop_then = (g.get("topCp", 0) or 0) - (g.get("chosenCp", 0) or 0)
     if drop_now > drop_then + 150:
