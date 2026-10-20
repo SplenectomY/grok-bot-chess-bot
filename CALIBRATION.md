@@ -312,6 +312,46 @@ mate within 50 bot moves). Results are max bot moves to mate.
 
 The market template still needs restaging; this change has not been restaged there.
 
+### 1400: T 8.0 and a flat 2+-blunder tier (2026-10-20)
+
+Owner-approved change, 1400 only (800/1000/1200 anchors untouched):
+- `T` 7.5 -> **8.0**.
+- 2+-blunder tier keeps the 1-blunder values for the hang and win-chance guards:
+  `B2_OBV` .97 -> **.93**, `B2_SUB` .80 -> **.65**, `B2_WC` .85 -> **.60**.
+  `B2_QUEEN`/`B2_MATE` stay 1/1 and `B2_BLIND` stays x0.4. The material rule, the
+  mate-in-2 guard and the conversion rules are unchanged.
+
+1400 is the top anchor, so 1400 and above resolve to exactly these values, and 1200 itself
+is unchanged. Targets between 1200 and 1400 interpolate to new values. For example, 1300 moves
+from T 6.05 to 6.30, B2 obv .96 to .94, sub .80 to .725 and wc .775 to .65.
+
+Tests: regress / regress2 / e2e all pass. regress2 now expects the 1400 n=2 win-chance value of .60.
+The 1400 endgame conversion regression passes 95/95 (KRK 20, KQK 20, KRPK 20, KQKP 20, KBBK 8;
+max 16 moves), and the 7 earlier failing starts also pass (7/7).
+
+1400 self-play, same harness as BF (no ponder, 160-ply cap, depth 18). Per-side counts use
+practical blunders per bot side (2 per game):
+
+| set | knobs | seeds | games | moves | ACPL | I/M/B per 100 | practical (90% CI) | sides 3+ | sides 4+ |
+|---|---|---|---|---|---|---|---|---|---|
+| BF (dc46f08) | T7.5, old B2 | 900-1600 | 48 | 5655 | 51.1 | 12.68/5.68/3.41 | 4.46 (4.03-4.92) | 53% | 24% |
+| CV (8d1302f) | T7.5, old B2 | 900-1600 | 48 | 5401 | 53.4 | 12.16/5.68/3.83 | 4.76 (4.30-5.24) | 47% | 34% |
+| T8P (old, paired) | T7.5, old B2 | 1700-2400 | 48 | 5693 | 55.2 | 14.14/5.43/3.27 | 4.48 (4.04-4.92) | 52% | 31% |
+| T8F (new) | T8.0, flat B2 | 900-1600 | 48 | 5175 | 55.5 | 14.01/6.90/3.75 | 4.89 (4.37-5.37) | 52% | 25% |
+| T8H (new, paired) | T8.0, flat B2 | 1700-2400 | 48 | 5353 | 55.9 | 13.34/6.02/4.24 | 5.70 (5.19-6.22) | 57% | 40% |
+| **new pooled** | **T8.0, flat B2** | | **96** | **10528** | **55.7** | **13.67/6.45/4.00** | **5.30 (4.95-5.67)** | **55%** | **32%** |
+
+T8H and T8P ran at the same time on the same seeds. ACPL rose to about 56, against a Lichess 1400
+band of 60.2. Practical blunders rose to about 5.3 per 100, and in the paired check new is 1.2 per
+100 higher. Bot sides with 4 or more practical blunders run 25-40% in self-play, both before and after.
+Self-play plays on to 160 plies in lost positions, so long cascades are common in both arms (7 or more:
+new 9/192, old 3/96 paired). The change did not remove them. No further retune was made.
+An earlier paired attempt (T8G/T8O) ran on an overloaded box, with about 5% engine-respawn moves.
+It was set aside: new 57.3/5.53 against old 56.6/5.45.
+
+Live: since dc46f08 the 1400 live pool has run 4.11 practical blunders per 100 over 5 games. Validate this change in human games.
+The market template was not restaged.
+
 ## 4. Calibrating a new level (e.g. 1200)
 
 1. Pick the target row from `calib_table.txt`.
