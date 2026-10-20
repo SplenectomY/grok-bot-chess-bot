@@ -769,7 +769,8 @@ ELO_PROFILES: dict[int, dict] = {
     # 1400 retuned 2026-10-12 (W46b10m12g) + hanging-piece guard 2026-10-15 (T 5.7, see CALIBRATION.md)
     # 2026-10-18: per-game blunder budget + material/mate-in-2/win-chance guard; T 5.7->7.5 keeps self-play ACPL (51.1 vs 52.0)
     # 2026-10-20: T 7.5->8.0; 2+-blunder tier keeps 1-blunder obv/sub/winchance (.93/.65/.60), queen/mate 1/1, blind x0.4 unchanged (see CALIBRATION.md)
-    1400: dict(T=8.0, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.10, BLIND_TEMPT=10.0, BLIND_MIN_LOSS=12.0, TEACH_BONUS=4.0,
+    # 2026-10-20 (later): T 8.0->8.5, budget tiers unchanged
+    1400: dict(T=8.5, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.10, BLIND_TEMPT=10.0, BLIND_MIN_LOSS=12.0, TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=5.0, GUARD_QUEEN_P=0.97, GUARD_MATE1_P=0.85,
                GUARD_HANG_OBV_P=0.85, GUARD_HANG_SUB_P=0.55, GUARD_HANG_DROP=150.0,
               GUARD_MATE_N=2.0, GUARD_MAT_ON=1.0, BUDGET_ON=1.0, B1_OBV=0.93, B1_SUB=0.65, B1_QUEEN=0.99, B1_MATE=0.95, B1_BLIND=0.7, B2_OBV=0.93, B2_SUB=0.65, B2_QUEEN=1.0, B2_MATE=1.0, B2_BLIND=0.4, GUARD_WC_P=0.0, B1_WC=0.6, B2_WC=0.6, CONVERT_MATE_N=2.0, CONVERT_SLACK=0.0, CONVERT_HMC=20.0),

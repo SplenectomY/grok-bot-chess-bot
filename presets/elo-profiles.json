@@ -203,22 +203,22 @@
       "status": "field-test",
       "calibrated": false,
       "calibratedOn": "2026-10-20",
-      "method": "self-play batches T8F900-1600 + T8H1700-2400 (96 games, 1400 vs itself, ponder off), scored by Stockfish depth 18; 2026-10-18 budget/material/mate-in-2/win-chance guard; 2026-10-20 T 7.5->8.0 and 2+-blunder tier obv/sub/winchance held at the 1-blunder values (.93/.65/.60); field-test",
+      "method": "self-play batches T85H1700-2400 + T85F900-1600 (96 games, 1400 vs itself, ponder off), scored by Stockfish depth 18; 2026-10-18 budget/material/mate-in-2/win-chance guard; 18661fb flat 2+-blunder tier (.93/.65/.60); T 8.0->8.5 (2026-10-20); field-test",
       "measured": {
-        "acpl": 55.7,
+        "acpl": 55.8,
         "per100": {
-          "inaccuracies": 13.67,
-          "mistakes": 6.45,
-          "blunders": 4.0
+          "inaccuracies": 14.06,
+          "mistakes": 5.5,
+          "blunders": 3.85
         },
-        "practicalBlundersPer100": 5.3,
+        "practicalBlundersPer100": 5.23,
         "practical90ci": [
-          4.95,
-          5.67
+          4.87,
+          5.59
         ],
-        "moves": 10528,
+        "moves": 10777,
         "scoreDepth": 18,
-        "note": "ACPL is the move-weighted mean of sixteen 6-game chunks; accuracy not pooled. Paired same-seed check (seeds 1700-2400): new 55.9 / 5.70 practical vs old values 55.2 / 4.48. Bot sides with 4+ practical blunders: 32.3% (old values same seeds 31.2%).",
+        "note": "ACPL is the move-weighted mean of sixteen 6-game chunks; same seeds as 18661fb (T 8.0: 55.7 / 5.30). Bot sides with 3+ / 4+ practical blunders: 56.8% / 34.4% (18661fb 54.7% / 32.3%).",
         "accuracyMeanOfChunks": 84.3
       },
       "target": {
@@ -232,7 +232,7 @@
         }
       },
       "knobs": {
-        "T": 8.0,
+        "T": 8.5,
         "ALPHA": 0.5,
         "KAPPA": 3.0,
         "K": 6,
@@ -266,7 +266,7 @@
         "CONVERT_SLACK": 0.0,
         "CONVERT_HMC": 20.0
       },
-      "note": "Practical blunders = metric blunders + clamp-hidden material losses (tools/calibration/practical.py). 2026-10-20: T 8.0 and a flat 2+-blunder tier raised ACPL to ~56 (target 60.2); self-play practical blunders rose to ~5.3/100 (paired same seeds +1.2/100 vs the 2026-10-18 values). Live play has run below self-play since dc46f08 (live pool 4.11/100 over 5 games); validate in human games.",
+      "note": "Practical blunders = metric blunders + clamp-hidden material losses (tools/calibration/practical.py). T 8.0->8.5 (2026-10-20) made no measurable difference in self-play on the same seeds (ACPL 55.8 vs 55.7, practical 5.23 vs 5.30/100); ACPL still under the 60.2 target. Validate in human games.",
       "previous": {
         "date": "2026-10-10",
         "knobs": {
@@ -381,6 +381,32 @@
           ],
           "note": "old values via CHESS_ELO_OVERRIDES on current code, seeds 1700-2400, run alongside T8H"
         }
+      },
+      "previous_2026_10_20_18661fb": {
+        "date": "2026-10-20",
+        "commit": "18661fb",
+        "knobs": {
+          "T": 8.0
+        },
+        "method": "self-play batches T8F900-1600 + T8H1700-2400 (96 games, 1400 vs itself, ponder off), scored by Stockfish depth 18; 2026-10-18 budget/material/mate-in-2/win-chance guard; 2026-10-20 T 7.5->8.0 and 2+-blunder tier obv/sub/winchance held at the 1-blunder values (.93/.65/.60); field-test",
+        "measured": {
+          "acpl": 55.7,
+          "per100": {
+            "inaccuracies": 13.67,
+            "mistakes": 6.45,
+            "blunders": 4.0
+          },
+          "practicalBlundersPer100": 5.3,
+          "practical90ci": [
+            4.95,
+            5.67
+          ],
+          "moves": 10528,
+          "scoreDepth": 18,
+          "note": "ACPL is the move-weighted mean of sixteen 6-game chunks; accuracy not pooled. Paired same-seed check (seeds 1700-2400): new 55.9 / 5.70 practical vs old values 55.2 / 4.48. Bot sides with 4+ practical blunders: 32.3% (old values same seeds 31.2%).",
+          "accuracyMeanOfChunks": 84.3
+        },
+        "note": "Practical blunders = metric blunders + clamp-hidden material losses (tools/calibration/practical.py). 2026-10-20: T 8.0 and a flat 2+-blunder tier raised ACPL to ~56 (target 60.2); self-play practical blunders rose to ~5.3/100 (paired same seeds +1.2/100 vs the 2026-10-18 values). Live play has run below self-play since dc46f08 (live pool 4.11/100 over 5 games); validate in human games."
       }
     }
   },

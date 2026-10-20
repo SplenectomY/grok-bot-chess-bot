@@ -352,6 +352,31 @@ It was set aside: new 57.3/5.53 against old 56.6/5.45.
 Live: since dc46f08 the 1400 live pool has run 4.11 practical blunders per 100 over 5 games. Validate this change in human games.
 The market template was not restaged.
 
+### 1400: T 8.0 -> 8.5 (2026-10-20, later)
+
+This change is owner-approved and touches only `T` at 1400 (8.0 -> **8.5**). The budget tiers stay as in 18661fb.
+In the interpolation, 1200 and below are unchanged. From 1201 to 1399 only `T` moves: 1250 goes
+from 5.45 to 5.575, 1300 from 6.30 to 6.55 and 1350 from 7.15 to 7.525. 1400 and above resolve to 8.5.
+
+Tests: regress / regress2 / e2e all pass. The 1400 endgame conversion regression passes 95/95
+(KRK 20 max 12, KQK 20 max 7, KRPK 20 max 12, KQKP 20 max 11, KBBK 8 max 16), and the 7 old failing starts all pass.
+
+The self-play uses the same harness and the same seeds as the 18661fb runs:
+
+| set | T | seeds | games | moves | ACPL | I/M/B per 100 | practical (90% CI) | sides 3+ | sides 4+ |
+|---|---|---|---|---|---|---|---|---|---|
+| T8H (18661fb) | 8.0 | 1700-2400 | 48 | 5353 | 55.9 | 13.34/6.02/4.24 | 5.70 (5.19-6.22) | 57% | 40% |
+| T85H | 8.5 | 1700-2400 | 48 | 5452 | 57.2 | 13.79/5.59/4.07 | 5.12 (4.64-5.61) | 54% | 37% |
+| T8F (18661fb) | 8.0 | 900-1600 | 48 | 5175 | 55.5 | 14.01/6.90/3.75 | 4.89 (4.37-5.37) | 52% | 25% |
+| T85F | 8.5 | 900-1600 | 48 | 5325 | 54.4 | 14.33/5.41/3.62 | 5.35 (4.86-5.86) | 59% | 32% |
+| 18661fb pooled | 8.0 | | 96 | 10528 | 55.7 | 13.67/6.45/4.00 | 5.30 (4.94-5.65) | 55% | 32% |
+| **T8.5 pooled** | **8.5** | | **96** | **10777** | **55.8** | **14.06/5.50/3.85** | **5.23 (4.87-5.59)** | **57%** | **34%** |
+
+On these seeds the extra 0.5 of `T` has no effect that can be measured. The two seed sets move in
+opposite directions, and the pooled ACPL and blunder rate match 18661fb within noise. ACPL is still
+below the Lichess 1400 band (60.2). Sides with 7 or more blunders: 12 of 192, against 9 of 192 before.
+The market template was not restaged.
+
 ## 4. Calibrating a new level (e.g. 1200)
 
 1. Pick the target row from `calib_table.txt`.
