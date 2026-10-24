@@ -971,9 +971,10 @@ def guard_kind(board, chosen, top, deep, raw, deep_infos, mate_of, P):
 
 
 # ---- per-game blunder budget --------------------------------------------
-# A bot move that reaches the board while flagged (kept guard case, or a
-# Lichess-scale blunder: >= BUDGET_WP_BLUNDER win%-points) is recorded as a
-# (position, SAN) pair. The count for a game = recorded pairs that occur among
+# A bot move that reaches the board and is a Lichess-scale blunder by the
+# post-choice check (budget_verdict: chosen move vs Stockfish best, >=
+# BUDGET_WP_BLUNDER win%-points on the analysis scale, mate-score artifacts and
+# already-decided positions excluded) is recorded as a (position, SAN) pair. The count for a game = recorded pairs that occur among
 # OUR moves in that game's move list, so it survives worker/loop restarts
 # (pairs persisted per gameId under BUDGET_DIR when the loop sends gameId).
 BUDGET_WP_BLUNDER = 15.0
@@ -1025,6 +1026,101 @@ def budget_count(game_id: str | None, start_fen: str | None, moves: list[str] | 
         except Exception:
             break
     return n
+
+
+# Post-choice blunder check (2026-10-24). Judged on the same scale as the
+# post-game analysis (tools/calibration/metrics.py judge(): Lichess win-chance
+# 2/(1+exp(-0.00368208*cp))-1, blunder = loss >= 0.30 = 15 win%-points; mates
+# encoded as +-(100000-n)). The guard's hang flags no longer feed the counter:
+# they missed positional/tactical blunders and fired on harmless moves in won
+# positions. Cheap screen on the deep view first; only moves that might be a
+# blunder get two small single-PV searches (position, position after the move).
+BUDGET_SCREEN_WP = 8.0        # deep-view win%-drop that triggers the verify search
+BUDGET_VERIFY_DEPTH = 18
+BUDGET_VERIFY_TIME = 1.0      # s, cap per verify search (2 searches)
+BUDGET_DECIDED_CP = 600       # |eval| band: best <= -this (already lost) or chosen >= +this (still won) -> not counted
+_MATE_ENC = 100000
+
+
+def _wc(cp: int) -> float:
+    return 2 / (1 + math.exp(-0.00368208 * cp)) - 1
+
+
+def _enc(score: chess.engine.PovScore, us: bool) -> int:
+    """Our-POV score in the analysis encoding: cp, or +-(100000-n) for mate in n."""
+    return int(score.pov(us).score(mate_score=_MATE_ENC))
+
+
+def budget_judge(best: int, chosen: int) -> tuple[bool, str]:
+    """(is_blunder, why) for the move scored `chosen` when the best scores `best`
+    (our POV, analysis encoding)."""
+    mb, mc = abs(best) >= _MATE_ENC // 2, abs(chosen) >= _MATE_ENC // 2
+    if mb or mc:
+        if mc and chosen > 0:
+            return False, "still mating (mate-score artifact)"
+        if mb and best > 0:   # had a forced mate, chose a non-mating / losing move
+            a = -_MATE_ENC if mc else chosen
+            if a >= BUDGET_DECIDED_CP:
+                return False, f"missed mate but still won ({a:+d}cp)"
+            return True, f"missed mate, now {a:+d}cp" if not mc else "missed mate, now gets mated"
+        if mc and chosen < 0:  # walks into a forced mate
+            if mb and best < 0:
+                return False, "mated anyway (mate-score artifact)"
+            if best <= -BUDGET_DECIDED_CP:
+                return False, f"already lost ({best:+d}cp)"
+            return True, f"allows mate from {best:+d}cp"
+        return False, "mate-score artifact"
+    if best <= -BUDGET_DECIDED_CP:
+        return False, f"already lost ({best:+d}cp)"
+    if chosen >= BUDGET_DECIDED_CP:
+        return False, f"still won ({chosen:+d}cp)"
+    d = 50 * (_wc(best) - _wc(chosen))
+    return d >= BUDGET_WP_BLUNDER, f"{best:+d}->{chosen:+d}cp, -{d:.1f} win%"
+
+
+def budget_verdict(board: chess.Board, chosen: chess.Move, top: chess.Move, deep_infos: dict,
+                   legal: list, verify: bool = True) -> tuple[str | None, str]:
+    """Post-choice counter check for the move actually chosen. Returns
+    ('winchance' | None, detail). Screens on the deep MultiPV view (no cost);
+    candidates get two capped single-PV searches, as the post-game analysis does."""
+    if chosen == top or len(legal) <= 1:
+        return None, "best/forced"
+    us = board.turn
+    dv = {m: _enc(deep_infos[m]["score"], us) for m in legal if m in deep_infos and "score" in deep_infos[m]}
+    if chosen not in dv or not dv:
+        return None, "no eval"
+    best_d, ch_d = max(dv.values()), dv[chosen]
+    flag, why = budget_judge(best_d, ch_d)
+    # Screen (deep view, margins for its depth-12 noise): skip the extra search
+    # when the move clearly cannot be a counted blunder.
+    margin = 300
+    if abs(ch_d) >= _MATE_ENC // 2 and ch_d > 0:
+        return None, f"screen ({why})"
+    if best_d <= -BUDGET_DECIDED_CP - margin or (abs(ch_d) < _MATE_ENC // 2 and ch_d >= BUDGET_DECIDED_CP + margin):
+        return None, f"screen ({why})"
+    if abs(best_d) < _MATE_ENC // 2 and abs(ch_d) < _MATE_ENC // 2 and \
+            50 * (_wc(best_d) - _wc(ch_d)) < BUDGET_SCREEN_WP:
+        return None, f"screen ({why})"
+    if not verify:
+        return ("winchance" if flag else None), f"deep {why}"
+    # Same measurement as the post-game analysis: one single-PV search of the
+    # position (best) and one of the position after the chosen move.
+    try:
+        eng = ensure_full_engine()
+        lim = chess.engine.Limit(depth=BUDGET_VERIFY_DEPTH, time=BUDGET_VERIFY_TIME)
+        best_v = _enc(eng.analyse(board, lim)["score"], us)
+        child = board.copy(stack=False)
+        child.push(chosen)
+        if child.is_checkmate():
+            ch_v = _MATE_ENC
+        elif child.is_game_over():
+            ch_v = 0
+        else:
+            ch_v = _enc(eng.analyse(child, lim)["score"], us)
+    except Exception as e:
+        return ("winchance" if flag else None), f"verify failed ({type(e).__name__}); deep {why}"
+    flag2, why2 = budget_judge(max(best_v, ch_v), ch_v)
+    return ("winchance" if flag2 else None), f"verify d{BUDGET_VERIFY_DEPTH} {why2}"
 
 
 def apply_budget(P: dict, n: int) -> dict:
@@ -1306,9 +1402,11 @@ def elo_choose(board: chess.Board, elo: int, legal_sans: list[str] | None,
             events.append(f"guard-kept-blunder: {san[chosen]} {what} (roll {roll:.2f}≥{p_block:.2f})")
             kept_kind = kind
             break
-    blunder = kept_kind
-    if blunder is None and chosen != top and _wp(top_cp) - _wp(deep[chosen]) >= BUDGET_WP_BLUNDER:
-        blunder = "winchance"
+    # Budget counter: judged on the move actually chosen (normal pick, blind
+    # turn, guard kept or redrawn alike) vs Stockfish best -- not on guard flags.
+    blunder, bwhy = budget_verdict(board, chosen, top, deep_infos, legal)
+    if blunder or not bwhy.startswith(("screen", "best")):
+        events.append(f"budget-check: {san[chosen]} {'BLUNDER' if blunder else 'ok'} ({bwhy})")
 
     source = "teach" if chosen in teach_set else ("best" if chosen == top else "model")
     alts = [san[m] for m in sorted(cands, key=lambda m: perceived[m])]

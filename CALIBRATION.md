@@ -207,7 +207,8 @@ blunders per 100 (KTS87H + EX7VDH era). Two picker changes, all knobs data in
    About 70% of the practical blunders left after change 1 were of this kind, so without it
    the budget had little to act on.
 3. **Per-game blunder budget** (`BUDGET_ON`, `B1_*`, `B2_*`): a bot move that reaches the
-   board flagged (the guard kept it) or losing >= 15 win% is recorded as a (position, SAN)
+   board and loses >= 15 win% against Stockfish best (post-choice check, see "Budget counter
+   fix (2026-10-24)" below; before that: guard-flagged or deep-view >= 15 win%) is recorded as a (position, SAN)
    pair. The pairs are persisted per `gameId` (the loop sends `room:gameNumber`) under
    `CHESS_BUDGET_DIR` or `<worker dir>/.budget/`, so the count survives worker/loop
    restarts. The count is recomputed from the game's move list on each request. After 1
@@ -376,6 +377,38 @@ On these seeds the extra 0.5 of `T` has no effect that can be measured. The two 
 opposite directions, and the pooled ACPL and blunder rate match 18661fb within noise. ACPL is still
 below the Lichess 1400 band (60.2). Sides with 7 or more blunders: 12 of 192, against 9 of 192 before.
 The market template was not restaged.
+
+### Budget counter fix (2026-10-24)
+
+Owner-approved. The per-game budget counter used to record moves the guard flagged as hanging
+material. In field games it missed real blunders (EBW6BK 9...f5, 12...Rc8 on a blind turn, 43...h4)
+and recorded harmless moves in won positions (MMPBHU 14.axb4, 16.Rxa1, 19.g4 at +6..+9;
+AHJVWV 27...a6, a slower mate at about +11).
+
+Now `budget_verdict()` judges the move actually chosen (normal pick, blind turn, guard
+kept or redrawn alike) on the post-game analysis scale (`metrics.judge`: Lichess win chance,
+blunder = loss >= 15 win%-points):
+
+* Screen on the deep MultiPV view already computed (no extra cost). Skip if the move is the top
+  move, gives/keeps a mate for us, the best is <= -900cp, the chosen move is still >= +900cp,
+  or the deep-view loss is < 8 win%.
+* Otherwise, two single-PV Stockfish searches at depth 18 (capped at 1.0 s each): the
+  position, and the position after the chosen move. This is the same measurement as the analysis.
+* Not counted: mate-score artifacts (a slower mate, mate-in-N to mate-in-M, or a missed mate
+  while the chosen move is still >= +600cp), already-lost positions (best <= -600cp), and
+  moves that leave the bot at >= +600cp.
+
+Guard tiers, `T`, the win-chance guard and move time are unchanged; only what increments the
+count changed. The guard's hang flags no longer feed the counter. Not re-measured by self-play:
+the B1/B2 tiers will now switch on at different moves than in the 18661fb/f4bad06 runs.
+
+Replay (`tools/calibration/test_budget_replay.py`, 4 field games, every bot move): the
+analysis blunders 19...f6 (AHJVWV), 9...f5, 12...Rc8, 43...h4 (EBW6BK) are recorded. None of
+the old false positives (14.axb4, 16.Rxa1, 19.g4, 23...Ne5, 27...a6, 16.Rc1) is recorded. One
+borderline miss: MMPBHU 7.Nh3, 15.1 win% in the analysis and 14.8-15.0 in the replay. MMPBHU
+25.Nd3 (a hung piece by the analysis' material rule, but only about 10 win%) is not recorded.
+Mean verify cost is 0.3-0.4 s on the ~15% of moves that pass the screen (max 0.75 s). In a
+109-move protocol replay at 1400, the mean choose time was 0.18 -> 0.19 s and the max 0.57 -> 0.86 s.
 
 ## 4. Calibrating a new level (e.g. 1200)
 
