@@ -28,3 +28,8 @@ Schema per anchor: `status` (calibrated | field-test), `calibrated` (bool), `kno
 P_BLIND, BLIND_TEMPT, BLIND_MIN_LOSS, TEACH_BONUS, TEACH_MAX_LOSS,
 GUARD_QUEEN_P, GUARD_MATE1_P), and informational `measured` / `target` /
 `method` / `note`. See ../CALIBRATION.md for how to calibrate a new anchor.
+
+`opening-book-1400.json` is the human opening book used by the 1200/1400 presets
+(`BOOK_MOVES`): Lichess rated Blitz+Rapid games, average rating 1400-1799, first 12 plies,
+moves with >= 5% share and >= 50 games that lose <= 50cp vs Stockfish (depth 18).
+Built offline by `tools/opening-book/build_book.py`; see CALIBRATION.md.

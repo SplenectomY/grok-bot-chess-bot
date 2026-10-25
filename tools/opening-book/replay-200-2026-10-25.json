@@ -1,0 +1,36 @@
+{
+ "before": {
+  "botMoves": 2000,
+  "flankPer100": 17.9,
+  "meanCpLoss": 35.6,
+  "bookShare": 0.0,
+  "lossOver50Per100": 22.9,
+  "moves1-6": {
+   "n": 1200,
+   "flankPer100": 19.9,
+   "meanCpLoss": 30.5
+  },
+  "moves7-10": {
+   "n": 800,
+   "flankPer100": 15.0,
+   "meanCpLoss": 43.2
+  }
+ },
+ "after": {
+  "botMoves": 2000,
+  "flankPer100": 8.0,
+  "meanCpLoss": 14.8,
+  "bookShare": 0.335,
+  "lossOver50Per100": 7.2,
+  "moves1-6": {
+   "n": 1200,
+   "flankPer100": 4.7,
+   "meanCpLoss": 11.3
+  },
+  "moves7-10": {
+   "n": 800,
+   "flankPer100": 13.0,
+   "meanCpLoss": 20.2
+  }
+ }
+}

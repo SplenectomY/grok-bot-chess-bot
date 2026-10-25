@@ -754,17 +754,20 @@ import re
 # (loaded below, overrides these). See CALIBRATION.md.
 ELO_PROFILES: dict[int, dict] = {
     # FIELD-TEST 2026-10-10: sub-1000 targets interpolate toward this anchor (below 800: clamp to 800)
-    800: dict(T=5.8, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.40, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, BLIND_OPEN_MOVES=0.0, TEACH_BONUS=4.0,
+    800: dict(T=5.8, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.40, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, BLIND_OPEN_MOVES=0.0, BOOK_MOVES=0.0, BOOK_MAX_LOSS_CP=60.0, BOOK_TACTIC_CP=40.0, OPEN_TOPK=3.0, OPEN_TOPK_MOVES=0.0,
+              TEACH_BONUS=4.0,
               TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6,
               GUARD_HANG_OBV_P=0.0, GUARD_HANG_SUB_P=0.0, GUARD_HANG_DROP=250.0,
               GUARD_MATE_N=1.0, GUARD_MAT_ON=0.0, BUDGET_ON=0.0, B1_OBV=0.0, B1_SUB=0.0, B1_QUEEN=0.0, B1_MATE=0.0, B1_BLIND=1.0, B2_OBV=0.0, B2_SUB=0.0, B2_QUEEN=0.0, B2_MATE=0.0, B2_BLIND=1.0, GUARD_WC_P=0.0, B1_WC=0.0, B2_WC=0.0, CONVERT_MATE_N=0.0, CONVERT_SLACK=0.3, CONVERT_HMC=20.0),
     # CALIBRATED 2026-10-09 by self-play, see CALIBRATION.md
-    1000: dict(T=5.2, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.36, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, BLIND_OPEN_MOVES=0.0, TEACH_BONUS=4.0,
+    1000: dict(T=5.2, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.36, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, BLIND_OPEN_MOVES=0.0, BOOK_MOVES=0.0, BOOK_MAX_LOSS_CP=60.0, BOOK_TACTIC_CP=40.0, OPEN_TOPK=3.0, OPEN_TOPK_MOVES=0.0,
+              TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=6.0, GUARD_QUEEN_P=0.85, GUARD_MATE1_P=0.6,
                GUARD_HANG_OBV_P=0.0, GUARD_HANG_SUB_P=0.0, GUARD_HANG_DROP=250.0,
               GUARD_MATE_N=1.0, GUARD_MAT_ON=0.0, BUDGET_ON=0.0, B1_OBV=0.0, B1_SUB=0.0, B1_QUEEN=0.0, B1_MATE=0.0, B1_BLIND=1.0, B2_OBV=0.0, B2_SUB=0.0, B2_QUEEN=0.0, B2_MATE=0.0, B2_BLIND=1.0, GUARD_WC_P=0.0, B1_WC=0.0, B2_WC=0.0, CONVERT_MATE_N=0.0, CONVERT_SLACK=0.25, CONVERT_HMC=20.0),
     # FIELD-TEST 2026-10-10: self-play calibrated vs Lichess Rapid/Classical (see CALIBRATION.md)
-    1200: dict(T=4.6, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.24, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, BLIND_OPEN_MOVES=10.0, TEACH_BONUS=4.0,
+    1200: dict(T=4.6, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.24, BLIND_TEMPT=12.0, BLIND_MIN_LOSS=20.0, BLIND_OPEN_MOVES=10.0, BOOK_MOVES=6.0, BOOK_MAX_LOSS_CP=60.0, BOOK_TACTIC_CP=40.0, OPEN_TOPK=3.0, OPEN_TOPK_MOVES=10.0,
+              TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=5.5, GUARD_QUEEN_P=0.875, GUARD_MATE1_P=0.65,
                GUARD_HANG_OBV_P=0.55, GUARD_HANG_SUB_P=0.3, GUARD_HANG_DROP=200.0,
               GUARD_MATE_N=2.0, GUARD_MAT_ON=1.0, BUDGET_ON=1.0, B1_OBV=0.85, B1_SUB=0.55, B1_QUEEN=0.95, B1_MATE=0.9, B1_BLIND=0.5, B2_OBV=0.95, B2_SUB=0.8, B2_QUEEN=0.99, B2_MATE=0.97, B2_BLIND=0.0, GUARD_WC_P=0.0, B1_WC=0.4, B2_WC=0.7, CONVERT_MATE_N=1.0, CONVERT_SLACK=0.1, CONVERT_HMC=20.0),
@@ -772,7 +775,8 @@ ELO_PROFILES: dict[int, dict] = {
     # 2026-10-18: per-game blunder budget + material/mate-in-2/win-chance guard; T 5.7->7.5 keeps self-play ACPL (51.1 vs 52.0)
     # 2026-10-20: T 7.5->8.0; 2+-blunder tier keeps 1-blunder obv/sub/winchance (.93/.65/.60), queen/mate 1/1, blind x0.4 unchanged (see CALIBRATION.md)
     # 2026-10-20 (later): T 8.0->8.5, budget tiers unchanged
-    1400: dict(T=8.5, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.10, BLIND_TEMPT=10.0, BLIND_MIN_LOSS=12.0, BLIND_OPEN_MOVES=10.0, TEACH_BONUS=4.0,
+    1400: dict(T=8.5, ALPHA=0.5, KAPPA=3.0, K=6, P_BLIND=0.10, BLIND_TEMPT=10.0, BLIND_MIN_LOSS=12.0, BLIND_OPEN_MOVES=10.0, BOOK_MOVES=6.0, BOOK_MAX_LOSS_CP=60.0, BOOK_TACTIC_CP=40.0, OPEN_TOPK=3.0, OPEN_TOPK_MOVES=10.0,
+              TEACH_BONUS=4.0,
                TEACH_MAX_LOSS=5.0, GUARD_QUEEN_P=0.97, GUARD_MATE1_P=0.85,
                GUARD_HANG_OBV_P=0.85, GUARD_HANG_SUB_P=0.55, GUARD_HANG_DROP=150.0,
               GUARD_MATE_N=2.0, GUARD_MAT_ON=1.0, BUDGET_ON=1.0, B1_OBV=0.93, B1_SUB=0.65, B1_QUEEN=0.99, B1_MATE=0.95, B1_BLIND=0.7, B2_OBV=0.93, B2_SUB=0.65, B2_QUEEN=1.0, B2_MATE=1.0, B2_BLIND=0.4, GUARD_WC_P=0.0, B1_WC=0.6, B2_WC=0.6, CONVERT_MATE_N=2.0, CONVERT_SLACK=0.0, CONVERT_HMC=20.0),
@@ -1209,6 +1213,116 @@ def convert_pick(board, legal, deep, mate_of, top, top_cp, P, hist_keys, san):
         else f"progress rule (halfmove clock {board.halfmove_clock}) -> {tag}")
 
 
+# ---------------------------------------------------------------------------
+# Opening book + early top-k (2026-10-25, after EUCETV 1.e3 2.h3 3.a3 5.b3).
+# BOOK_MOVES > 0: while fullmove <= BOOK_MOVES and the position (EPD) is in
+# presets/opening-book-1400.json (Lichess 1400-1799 blitz/rapid popularity,
+# Stockfish-checked offline), play a book move sampled by game count. The book
+# never overrides: a won position (conversion rules), an active blind turn,
+# a capture/check top move that beats every book move by >= BOOK_TACTIC_CP,
+# or book moves the live deep view rates more than BOOK_MAX_LOSS_CP below the
+# top move (those are dropped; none left -> no book).
+# A qualifying teach move keeps its normal-pick chance: with the probability the
+# sampler would give it, the teach move is played (guards apply) instead.
+# OPEN_TOPK_MOVES > 0: normal picks through that move draw only from the
+# OPEN_TOPK lowest-perceived-loss candidates, plus the deep top move and any
+# teach move (so a tactical shot, e.g. taking a hung piece, is always in the
+# pool); guards then work on that pool as usual.
+# ---------------------------------------------------------------------------
+BOOK_FILE = Path(os.environ.get("CHESS_OPENING_BOOK")
+                 or (Path(__file__).resolve().parent / "presets" / "opening-book-1400.json"))
+_BOOK: dict | None = None
+
+
+def opening_book() -> dict:
+    """EPD -> {"games", "moves": [{"san", "games", ...}]}; {} if the file is missing/bad."""
+    global _BOOK
+    if _BOOK is None:
+        try:
+            _BOOK = json.loads(BOOK_FILE.read_text()).get("positions", {})
+        except Exception as e:
+            if not isinstance(e, FileNotFoundError):
+                print(f"opening book load failed ({BOOK_FILE}): {e}", file=sys.stderr)
+            _BOOK = {}
+    return _BOOK
+
+
+def _epd(board: chess.Board) -> str:
+    return " ".join(board.fen().split()[:4])
+
+
+def book_pick(board, deep, top, top_cp, san, P, events, won, teach_set, blind_active,
+              perceived=None, pick_pool=None):
+    """(move, prob) from the opening book; "teach" (play the teach move via the
+    normal pipeline); or None (fall through to the picker)."""
+    n = int(round(P.get("BOOK_MOVES", 0)))
+    if n <= 0 or board.fullmove_number > n:
+        return None
+    entry = opening_book().get(_epd(board))
+    if not entry:
+        events.append("book: out of book")
+        return None
+    if won:
+        events.append("book: skipped (won position, conversion rules)")
+        return None
+    if teach_set and pick_pool is not None:
+        # teach keeps its normal-pick chance: the share the sampler would give
+        # the teach move(s) in the (top-k) pool decides teach vs book
+        lo = min(perceived[m] for m in pick_pool)
+        w = {m: math.exp(-(perceived[m] - lo) / max(1e-6, P["T"])) for m in pick_pool}
+        p_teach = sum(w[m] for m in pick_pool if m in teach_set) / sum(w.values())
+        if RNG.random() < p_teach:
+            events.append(f"book: teach move {[san[m] for m in teach_set]} drawn (p={p_teach:.2f})")
+            return "teach"
+    if blind_active:
+        events.append("book: skipped (blind turn)")
+        return None
+    max_loss = P.get("BOOK_MAX_LOSS_CP", 60.0)
+    moves = []
+    for e in entry.get("moves", []):
+        try:
+            m = board.parse_san(e["san"])
+        except ValueError:
+            continue
+        if m not in deep:
+            continue
+        if top_cp - deep[m] > max_loss:
+            events.append(f"book: drop {e['san']} ({deep[m] - top_cp:+d}cp vs {san[top]} > {max_loss:.0f})")
+            continue
+        moves.append((m, float(e.get("games", 1))))
+    if not moves:
+        events.append("book: no book move passes the live check")
+        return None
+    best_book = max(deep[m] for m, _ in moves)
+    if top not in [m for m, _ in moves] and (board.is_capture(top) or board.gives_check(top)) \
+            and top_cp - best_book >= P.get("BOOK_TACTIC_CP", 40.0):
+        events.append(f"book: skipped (tactic {san[top]} {top_cp - best_book:+d}cp over the best book move)")
+        return None
+    tot = sum(w for _, w in moves)
+    r = RNG.random() * tot
+    for m, w in moves:
+        r -= w
+        if r <= 0:
+            break
+    events.append(f"book: {san[m]} p={w / tot:.2f} ({int(w)} of {int(tot)} games in book; "
+                  f"{deep[m] - top_cp:+d}cp vs {san[top]}) options={[san[x] for x, _ in moves]}")
+    return m, w / tot
+
+
+def open_topk(board, cands, perceived, top, teach_set, san, P, events):
+    """Restrict the normal-pick pool through move OPEN_TOPK_MOVES."""
+    k = int(round(P.get("OPEN_TOPK", 0)))
+    nmv = int(round(P.get("OPEN_TOPK_MOVES", 0)))
+    if k <= 0 or nmv <= 0 or board.fullmove_number > nmv or len(cands) <= k:
+        return cands
+    keep = sorted(cands, key=lambda m: (perceived[m], san[m]))[:k]
+    keep += [m for m in cands if m not in keep and (m == top or m in teach_set)]
+    dropped = [san[m] for m in cands if m not in keep]
+    if dropped:
+        events.append(f"open-top{k}: pool {[san[m] for m in keep]} (dropped {dropped})")
+    return keep
+
+
 def elo_choose(board: chess.Board, elo: int, legal_sans: list[str] | None,
                hist_keys: list[str] | None = None, moves: list[str] | None = None,
                budget_n: int = 0) -> dict:
@@ -1284,10 +1398,12 @@ def elo_choose(board: chess.Board, elo: int, legal_sans: list[str] | None,
     # player does not "overlook" 2.e4 after 1...f6 (ARSHJ7). The RNG draw is
     # still made so the random stream, and every later pick, is unchanged.
     blind_draw = P["P_BLIND"] > 0 and RNG.random() < P["P_BLIND"]
+    blind_active = False
     open_n = int(P.get("BLIND_OPEN_MOVES", 0))
     if blind_draw and board.fullmove_number <= open_n:
         events.append(f"blind-turn skipped: opening (move {board.fullmove_number} <= {open_n})")
     elif blind_draw:
+        blind_active = True
         pool = [m for m in sorted(legal, key=lambda x: Ld[x])
                 if Ld[m] >= P.get("BLIND_MIN_LOSS", BLIND_MIN_LOSS) and len(deep_infos[m].get("pv") or []) >= 2][:BLIND_MAX_EVAL]
         blind_seen = []
@@ -1337,6 +1453,23 @@ def elo_choose(board: chess.Board, elo: int, legal_sans: list[str] | None,
             perceived[tm] = P["ALPHA"] * Ls[tm] + (1 - P["ALPHA"]) * Ld[tm]
         perceived[tm] -= P["TEACH_BONUS"]
 
+    # Opening book (see book_pick): after blind/teach so those keep priority.
+    bp = book_pick(board, deep, top, top_cp, san, P, events, won, teach_set, blind_active, perceived,
+                   open_topk(board, cands, perceived, top, teach_set, san, P, []) if teach_set else None)
+    if bp == "teach":
+        cands = [m for m in cands if m in teach_set]
+    elif bp is not None:
+        chosen, prob = bp
+        blunder, bwhy = budget_verdict(board, chosen, top, deep_infos, legal)
+        if blunder or not bwhy.startswith(("screen", "best")):
+            events.append(f"budget-check: {san[chosen]} {'BLUNDER' if blunder else 'ok'} ({bwhy})")
+        res = _elo_result(board, chosen, deep, Ld, "book", events,
+                          [san[chosen]] + [san[m] for m in sorted(cands, key=lambda m: perceived[m]) if m != chosen],
+                          P, top=top)
+        res["blunder"] = blunder
+        res["gate"]["bud"] = int(P.get("budget_n", 0))
+        return res
+
     # Won-position rules.
     if won and hist_keys:
         def reps(m):
@@ -1376,6 +1509,7 @@ def elo_choose(board: chess.Board, elo: int, legal_sans: list[str] | None,
                 return m, wt / sum(w)
         return pool[-1], w[-1] / sum(w)
 
+    cands = open_topk(board, cands, perceived, top, teach_set, san, P, events)
     pool = list(cands)
     chosen, prob = draw(pool)
     raw = {m: _raw_cp(deep_infos[m], us) for m in legal}

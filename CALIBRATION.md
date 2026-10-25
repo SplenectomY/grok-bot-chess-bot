@@ -435,6 +435,55 @@ re-calibrated by self-play: at 1400 a blind turn fires on about 10% of moves, an
 a minority of them pick a blind candidate, so the expected effect on ACPL is small.
 Test: `tools/calibration/test_blind_opening.py`.
 
+### Opening book + top-3 limit through move 10 (2026-10-25)
+
+Approved by John after EUCETV (1.e3 2.h3 3.a3 5.b3). In the opening almost every sensible
+move is within 0-5 win% of the best, far below T, so the sampler was nearly flat over 8-12
+candidates. Lowering T alone barely helps; the candidate set is the lever.
+
+1. **Opening book** `presets/opening-book-1400.json`. The Lichess explorer API now returns 401
+   without an account token, so the same statistic was rebuilt offline (once) from the public
+   Lichess database: the first 400 MB of `lichess_db_standard_rated_2026-09.pgn.zst`
+   (1,291,315 games scanned), keeping rated Blitz + Rapid games with average rating 1400-1799
+   (= explorer `ratings=1400,1600`): 324,610 games, first 12 plies. A position needs >= 300
+   games; a move needs >= 5% share and >= 50 games, and must lose <= 50cp vs Stockfish best
+   (depth 18). Result: 522 positions, 1480 moves (209 popular moves dropped by the Stockfish
+   check). Rebuild: `tools/opening-book/build_book.py`. Never queried during play.
+   In play (`BOOK_MOVES` = 6): while the move number is <= 6 and the position is in the book,
+   a book move is sampled by game count. Safety, checked live on the picker's deep view:
+   book moves more than `BOOK_MAX_LOSS_CP` (60) below the top move are dropped; the book is
+   skipped if the top move is a capture/check beating every book move by >= `BOOK_TACTIC_CP`
+   (40), in a won position (conversion rules), or on a blind turn. A qualifying teach move
+   keeps its normal-pick chance (the sampler's share of the teach move decides teach vs book).
+   Out of book -> normal picker. The budget counter judges book moves like any other move.
+2. **Top-3 limit** (`OPEN_TOPK` 3, `OPEN_TOPK_MOVES` 10): through move 10 a normal pick is drawn
+   only from the 3 lowest-perceived-loss candidates plus the deep top move and any teach
+   move, so a tactical shot (taking a hung piece) is always in the pool; guards work on that pool.
+
+| preset | BOOK_MOVES | OPEN_TOPK_MOVES | change |
+|---|---|---|---|
+| 800 | 0 | 0 | none |
+| 1000 | 0 | 0 | none (the only fully calibrated level; odd openings are realistic here) |
+| 1200 | 6 | 10 | book moves 1-6, top-3 through move 10 |
+| 1400 | 6 | 10 | book moves 1-6, top-3 through move 10 |
+
+Targets between anchors interpolate (1100: book through move 3, top-3 through move 5).
+T, the guard tiers, the counter, blind-turn rules, conversion and timing are unchanged.
+
+Replay (`tools/calibration/opening_replay.py --games 200`, 1400, bot moves 1-10, cp loss on the
+picker's depth-12 judge, opponent = book by popularity else a random Stockfish top-3 move):
+
+| | flank-pawn moves /100 | mean cp loss | loss > 50cp /100 | book share |
+|---|---|---|---|---|
+| before (836bb2d) | 17.9 | 35.6 | 22.9 | 0 |
+| after | 8.0 | 14.8 | 7.2 | 33.5% |
+| moves 1-6 before / after | 19.9 / 4.7 | 30.5 / 11.3 | | |
+| moves 7-10 before / after | 15.0 / 13.0 | 43.2 / 20.2 | | |
+
+"Flank pawn" = quiet a/b/g/h-pawn move, so it also counts sound ones (g3/g6 fianchettos,
+...a6). Teach picks rose from 8% to 18% of moves 1-10 (teach moves stay in the small top-3
+pool); their mean loss is about 18cp. Tests: `tools/calibration/test_opening_book.py`.
+
 ## 4. Calibrating a new level (e.g. 1200)
 
 1. Pick the target row from `calib_table.txt`.
