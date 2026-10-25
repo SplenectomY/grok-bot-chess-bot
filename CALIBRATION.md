@@ -410,6 +410,31 @@ borderline miss: MMPBHU 7.Nh3, 15.1 win% in the analysis and 14.8-15.0 in the re
 Mean verify cost is 0.3-0.4 s on the ~15% of moves that pass the screen (max 0.75 s). In a
 109-move protocol replay at 1400, the mean choose time was 0.18 -> 0.19 s and the max 0.57 -> 0.86 s.
 
+### No blind turns in the opening (2026-10-25)
+
+Approved by John after ARSHJ7, where 1...f6 came from a ponder blind turn: its deep
+loss (12.2) was just over `BLIND_MIN_LOSS` 12, so with the "refutation" 2.e4 ignored and
+the `BLIND_TEMPT` bonus it looked almost free. Overlooking a quiet opening reply is
+not a 1400 kind of mistake.
+
+New preset knob `BLIND_OPEN_MOVES`: no blind turn while `board.fullmove_number` is at most
+this value. Opening = moves 1-10 (plies 1-20), the same definition the phase split uses.
+
+| preset | BLIND_OPEN_MOVES | change |
+|---|---|---|
+| 800 | 0 | none (blind turns from move 1, as before) |
+| 1000 | 0 | none |
+| 1200 | 10 | no blind turns in moves 1-10 |
+| 1400 | 10 | no blind turns in moves 1-10 |
+
+Targets between anchors interpolate linearly (e.g. 1100 -> 5 moves, 1300 -> 10).
+The blind-turn RNG draw is still made, so the random stream and every later pick
+are unchanged; a skipped turn logs `blind-turn skipped: opening (move N <= 10)`.
+T, the guard tiers, the budget counter, normal picks and timing are unchanged. Not
+re-calibrated by self-play: at 1400 a blind turn fires on about 10% of moves, and only
+a minority of them pick a blind candidate, so the expected effect on ACPL is small.
+Test: `tools/calibration/test_blind_opening.py`.
+
 ## 4. Calibrating a new level (e.g. 1200)
 
 1. Pick the target row from `calib_table.txt`.
